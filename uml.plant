@@ -1,0 +1,60 @@
+@startuml
+skinparam style strictuml
+skinparam classAttributeIconSize 0
+
+class User {
+  - id : int
+  - name : string
+  - email : string
+  - password : string
+  - role : string
+  + isAdmin() : bool
+  + isRecolector() : bool
+  + isUser() : bool
+}
+
+class Solicitud {
+  - id : int
+  - user_id : int
+  - tipo_residuo : string
+  - fecha_programada : date
+  - frecuencia : string
+  - estado : string
+  + user() : User
+  + recolecciones() : Recoleccion[*]
+}
+
+class Recoleccion {
+  - id : int
+  - solicitud_id : int
+  - user_id : int
+  - fecha_real : datetime
+  - kilos : float
+  - puntos : int
+  + solicitud() : Solicitud
+  + recolector() : User
+}
+
+class SolicitudController {
+  + index()
+  + create()
+  + store()
+  + update()
+  + destroy()
+}
+
+class RecoleccionController {
+  + index()
+  + store()
+  + update()
+}
+
+class AdminMiddleware {
+  + handle(request, next)
+}
+
+User "1" -- "N" Solicitud : crea
+Solicitud "1" -- "N" Recoleccion : genera
+User "1" -- "N" Recoleccion : realiza (rol recolector)
+
+@enduml
