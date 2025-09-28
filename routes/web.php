@@ -16,8 +16,12 @@ Route::middleware(['auth'])->group(function () {
 });
 
 Route::middleware(['auth'])->group(function () {
+    // 1) Export SIEMPRE antes del resource
+    Route::get('solicitudes/export', [SolicitudController::class, 'export'])->name('solicitudes.export');
+    Route::resource('solicitudes', SolicitudController::class)->parameters(['solicitudes' => 'solicitud'])->whereNumber('solicitud');
     Route::resource('solicitudes', SolicitudController::class);
     Route::resource('recolecciones', RecoleccionController::class)->only(['index','store','update']);
+    
     // Rutas de perfil
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
