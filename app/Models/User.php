@@ -2,18 +2,38 @@
 
 namespace App\Models;
 
-// use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 
+/**
+ * Modelo: User
+ * --------------------------------------------------------------------------
+ * Representa a los usuarios del sistema EcoGestión.
+ *
+ * Atributos principales (tabla users):
+ * - id       : identificador único
+ * - name     : nombre del usuario
+ * - email    : correo electrónico
+ * - password : contraseña (encriptada)
+ * - role     : rol dentro del sistema (user | admin | recolector)
+ *
+ * Relaciones:
+ * - solicitudes()   : hasMany Solicitud (usuarios que crean solicitudes)
+ * - recolecciones() : hasMany Recoleccion (usuarios con rol recolector)
+ *
+ * Métodos útiles:
+ * - isAdmin()     : true si el usuario es administrador
+ * - isUser()      : true si es usuario normal
+ * - isRecolector(): true si es recolector
+ */
 class User extends Authenticatable
 {
-    /** @use HasFactory<\Database\Factories\UserFactory> */
     use HasFactory, Notifiable;
 
     /**
-     * The attributes that are mass assignable.
+     * Atributos que se pueden asignar masivamente.
+     * IMPORTANTE: incluir "role" porque lo agregamos en la migración.
      *
      * @var list<string>
      */
@@ -21,10 +41,11 @@ class User extends Authenticatable
         'name',
         'email',
         'password',
+        'role',
     ];
 
     /**
-     * The attributes that should be hidden for serialization.
+     * Atributos que deben ocultarse en arrays/JSON.
      *
      * @var list<string>
      */
@@ -34,7 +55,7 @@ class User extends Authenticatable
     ];
 
     /**
-     * Get the attributes that should be cast.
+     * Atributos que deben ser casteados a tipos específicos.
      *
      * @return array<string, string>
      */
@@ -42,25 +63,47 @@ class User extends Authenticatable
     {
         return [
             'email_verified_at' => 'datetime',
-            'password' => 'hashed',
+            'password'          => 'hashed',
         ];
     }
 
-    public function solicitudes(){
+    /**
+     * Relación: un usuario puede tener varias solicitudes.
+     */
+    public function solicitudes()
+    {
         return $this->hasMany(\App\Models\Solicitud::class);
     }
 
-    public function recolecciones(){
+    /**
+     * Relación: un usuario (recolector) puede tener varias recolecciones.
+     */
+    public function recolecciones()
+    {
         return $this->hasMany(\App\Models\Recoleccion::class);
     }
 
-    public function isAdmin()
-{
-    return $this->role === 'admin';
-}
+    /**
+     * Verifica si el usuario es administrador.
+     */
+    public function isAdmin(): bool
+    {
+        return $this->role === 'admin';
+    }
 
-public function isUser()
-{
-    return $this->role === 'user';
-}
+    /**
+     * Verifica si el usuario es un usuario normal.
+     */
+    public function isUser(): bool
+    {
+        return $this->role === 'user';
+    }
+
+    /**
+     * Verifica si el usuario es recolector.
+     */
+    public function isRecolector(): bool
+    {
+        return $this->role === 'recolector';
+    }
 }

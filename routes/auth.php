@@ -11,11 +11,24 @@ use App\Http\Controllers\Auth\RegisteredUserController;
 use App\Http\Controllers\Auth\VerifyEmailController;
 use Illuminate\Support\Facades\Route;
 
+/*
+|--------------------------------------------------------------------------
+| Rutas de Autenticación
+|--------------------------------------------------------------------------
+| - 'login' público (GET/POST) para mostrar/procesar acceso.
+| - Grupo 'guest' para registro y recuperación de contraseña.
+| - Grupo 'auth' para acciones que requieren usuario autenticado.
+*/
+
+//
 // Rutas públicas de login (acceso desde welcome con ?role=...)
+//
 Route::get('login', [AuthenticatedSessionController::class, 'create'])->name('login');
 Route::post('login', [AuthenticatedSessionController::class, 'store']);
 
-// El resto (register, password reset) sigue protegido por 'guest'
+//
+// Rutas sólo para invitados (no autenticados)
+//
 Route::middleware('guest')->group(function () {
     Route::get('register', [RegisteredUserController::class, 'create'])->name('register');
     Route::post('register', [RegisteredUserController::class, 'store']);
@@ -27,6 +40,9 @@ Route::middleware('guest')->group(function () {
     Route::post('reset-password', [NewPasswordController::class, 'store'])->name('password.store');
 });
 
+//
+// Rutas para usuarios autenticados
+//
 Route::middleware('auth')->group(function () {
     Route::get('verify-email', EmailVerificationPromptController::class)
         ->name('verification.notice');

@@ -4,25 +4,32 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
+/**
+ * Migration: add_role_to_users_table
+ * ----------------------------------------------------------------------------
+ * Agrega la columna 'role' a la tabla 'users' para gestionar permisos básicos.
+ * Valores esperados: 'user' | 'admin' | 'recolector' (por defecto: 'user').
+ */
 return new class extends Migration
 {
     /**
-     * Run the migrations.
+     * Ejecutar las migraciones.
      */
     public function up(): void
     {
         Schema::table('users', function (Blueprint $table) {
-            $table->string('role')->default('user'); // 'user' o 'admin'
+            // Nota: si tu tabla ya tiene muchos registros, podrías añadir índice si filtras por 'role'.
+            $table->string('role')->default('user'); // 'user' | 'admin' | 'recolector'
         });
     }
 
     /**
-     * Reverse the migrations.
+     * Revertir las migraciones.
      */
     public function down(): void
     {
         Schema::table('users', function (Blueprint $table) {
-        $table->dropColumn('role');
+            $table->dropColumn('role');
         });
     }
 };

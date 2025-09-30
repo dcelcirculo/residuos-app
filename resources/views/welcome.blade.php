@@ -1,15 +1,24 @@
+{{-- 
+    Vista: Welcome (Pantalla de selección de rol antes del login)
+    ----------------------------------------------------------------------------
+    Presenta el logotipo y opciones de acceso para Usuario, Administrador
+    y Recolector. Redirige a la ruta 'login' con un parámetro ?role=...
+--}}
+
 <!DOCTYPE html>
 <html lang="es">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>EcoGestión - Acceso</title>
+    {{-- Carga de assets con Vite (Tailwind + JS) --}}
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 </head>
 <body class="min-h-screen flex flex-col justify-center items-center bg-gray-100">
 
-    <!-- Logo -->
+    {{-- Logotipo y nombre de la app --}}
     <div class="flex flex-col items-center mb-8">
+        {{-- Icono simple como logo (SVG) --}}
         <svg xmlns="http://www.w3.org/2000/svg" class="h-16 w-16 text-gray-800" fill="none" viewBox="0 0 24 24"
              stroke="currentColor" stroke-width="2" aria-hidden="true">
             <path stroke-linecap="round" stroke-linejoin="round"
@@ -19,10 +28,10 @@
         <p class="text-gray-600">Sistema Integral de Recolección de Basuras</p>
     </div>
 
-    <!-- Mensaje -->
+    {{-- Subtítulo / instrucción --}}
     <h2 class="text-lg font-semibold mb-6">Seleccione su tipo de acceso:</h2>
 
-    <!-- Botones -->
+    {{-- Botones de acceso por rol --}}
     <div class="space-y-4 w-64">
         <a href="{{ route('login') }}?role=user"
            class="block w-full text-center bg-blue-600 text-white py-2 rounded hover:bg-blue-700">

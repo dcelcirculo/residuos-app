@@ -9,21 +9,15 @@ use Illuminate\Support\Facades\Storage;
 class SolicitudController extends Controller
 {
     /**
-     * Display a listing of the resource.
+     * Mostrar listado de solicitudes del usuario autenticado.
+     * Incluye filtros, búsqueda y ordenamiento.
      */
-    // public function index()
-    // {
-    //     $solicitudes = auth()->user()
-    //     ->solicitudes()
-    //     ->latest()
-    //     ->paginate(10);
-
-    //     return view('solicitudes.index', compact('solicitudes'));
-    // }
     public function index(Request $request)
     {
+        // Construir query dinámica usando filtros y orden
         [$query, $sort, $dir] = $this->buildQuery($request);
 
+        // Paginar resultados y mantener filtros en la URL
         $solicitudes = $query
             ->paginate(10)
             ->appends($request->query());
@@ -31,18 +25,21 @@ class SolicitudController extends Controller
         return view('solicitudes.index', compact('solicitudes', 'sort', 'dir'));
     }
 
-    public function export(\Illuminate\Http\Request $request)
+    /**
+     * Exportar listado de solicitudes a un archivo CSV.
+     */
+    public function export(Request $request)
     {
         [$query] = $this->buildQuery($request);
 
-        // Construimos el CSV en memoria (UTF-8 con BOM para Excel)
+        // Crear CSV en memoria (UTF-8 con BOM para compatibilidad con Excel)
         $tmp = fopen('php://temp', 'w+');
         fwrite($tmp, "\xEF\xBB\xBF"); // BOM
 
-        // Cabecera
+        // Encabezados del archivo
         fputcsv($tmp, ['ID','Tipo residuo','Frecuencia','Estado','Fecha programada','Creado'], ';');
 
-        // Datos
+        // Filas con los datos de cada solicitud
         foreach ($query->orderBy('id')->cursor() as $s) {
             fputcsv($tmp, [
                 $s->id,
@@ -54,13 +51,14 @@ class SolicitudController extends Controller
             ], ';');
         }
 
+        // Obtener el contenido del CSV
         rewind($tmp);
         $csv = stream_get_contents($tmp);
         fclose($tmp);
 
         $fileName = 'solicitudes_'.now()->format('Ymd_His').'.csv';
 
-        // Enviamos respuesta binaria con cabeceras de descarga
+        // Retornar respuesta para descarga
         return response($csv, 200, [
             'Content-Type'        => 'text/csv; charset=UTF-8',
             'Content-Disposition' => 'attachment; filename="'.$fileName.'"',
@@ -71,18 +69,18 @@ class SolicitudController extends Controller
         ]);
     }
 
-
-
     /**
-     * Aplica filtros/orden al listado de solicitudes del usuario actual.
-     * Devuelve [Builder $query, string $sort, string $dir]
+     * Método privado para construir el query de solicitudes con filtros y ordenamiento.
+     * Devuelve [Builder $query, string $sort, string $dir].
      */
     private function buildQuery(Request $request): array
     {
         $user = $request->user();
-        $query = $user->solicitudes(); // parte desde relación del usuario
 
-        // Búsqueda libre (ajusta campos si necesitas)
+        // Iniciar query desde las solicitudes del usuario autenticado
+        $query = $user->solicitudes();
+
+        // 🔍 Búsqueda libre en id, tipo_residuo, frecuencia o estado
         if ($request->filled('q')) {
             $q = $request->string('q');
             $query->where(function ($qq) use ($q) {
@@ -93,10 +91,12 @@ class SolicitudController extends Controller
             });
         }
 
-        // Filtros
+        // Filtro por estado (si no es "todos")
         if ($request->filled('estado') && $request->estado !== 'todos') {
             $query->where('estado', $request->estado);
         }
+
+        // Filtros por fechas
         if ($request->filled('from')) {
             $query->whereDate('created_at', '>=', $request->date('from'));
         }
@@ -104,16 +104,21 @@ class SolicitudController extends Controller
             $query->whereDate('created_at', '<=', $request->date('to'));
         }
 
-        // Orden
-        $sort = in_array($request->get('sort'), ['id','created_at','fecha_programada','estado']) ? $request->get('sort') : 'created_at';
-        $dir  = in_array($request->get('dir'),  ['asc','desc']) ? $request->get('dir')  : 'desc';
+        // Ordenar resultados (default: created_at desc)
+        $sort = in_array($request->get('sort'), ['id','created_at','fecha_programada','estado'])
+            ? $request->get('sort')
+            : 'created_at';
+        $dir  = in_array($request->get('dir'),  ['asc','desc'])
+            ? $request->get('dir')
+            : 'desc';
 
         $query->orderBy($sort, $dir);
 
         return [$query, $sort, $dir];
     }
+
     /**
-     * Show the form for creating a new resource.
+     * Mostrar formulario para crear una nueva solicitud.
      */
     public function create()
     {
@@ -121,26 +126,31 @@ class SolicitudController extends Controller
     }
 
     /**
-     * Store a newly created resource in storage.
+     * Guardar una nueva solicitud en la base de datos.
      */
-    public function store(\Illuminate\Http\Request $request){
+    public function store(Request $request)
+    {
+        // Validación de datos del formulario
         $data = $request->validate([
-        'tipo_residuo'     => 'required|in:organico,inorganico,peligroso',
-        'fecha_programada' => 'required|date',
-        'frecuencia'       => 'required|in:programada,demanda',
-    ]);
+            'tipo_residuo'     => 'required|in:organico,inorganico,peligroso',
+            'fecha_programada' => 'required|date',
+            'frecuencia'       => 'required|in:programada,demanda',
+        ]);
 
-    $data['user_id'] = auth()->id();
+        // Asociar solicitud al usuario autenticado
+        $data['user_id'] = auth()->id();
 
-    \App\Models\Solicitud::create($data);
+        // Crear registro en DB
+        Solicitud::create($data);
 
-    return redirect()
-        ->route('solicitudes.index')
-        ->with('ok', 'Solicitud creada');
+        return redirect()
+            ->route('solicitudes.index')
+            ->with('ok', 'Solicitud creada');
     }
 
     /**
-     * Display the specified resource.
+     * Mostrar una solicitud específica.
+     * (Por implementar si es necesario).
      */
     public function show(Solicitud $solicitud)
     {
@@ -148,7 +158,8 @@ class SolicitudController extends Controller
     }
 
     /**
-     * Show the form for editing the specified resource.
+     * Mostrar formulario de edición de una solicitud.
+     * (Por implementar).
      */
     public function edit(Solicitud $solicitud)
     {
@@ -156,7 +167,8 @@ class SolicitudController extends Controller
     }
 
     /**
-     * Update the specified resource in storage.
+     * Actualizar una solicitud existente.
+     * (Por implementar).
      */
     public function update(Request $request, Solicitud $solicitud)
     {
@@ -164,7 +176,8 @@ class SolicitudController extends Controller
     }
 
     /**
-     * Remove the specified resource from storage.
+     * Eliminar una solicitud.
+     * (Por implementar).
      */
     public function destroy(Solicitud $solicitud)
     {

@@ -2,39 +2,70 @@
 
 namespace App\Models;
 
-// Importa los traits y clases necesarios de Eloquent
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
-// Define el modelo Solicitud que extiende de Model
+/**
+ * Modelo: Solicitud
+ * --------------------------------------------------------------------------
+ * Representa una petición de recolección hecha por un usuario en EcoGestión.
+ *
+ * Atributos principales:
+ * - user_id          : identificador del usuario que crea la solicitud
+ * - tipo_residuo     : orgánico | inorgánico | peligroso
+ * - fecha_programada : fecha objetivo de la recolección
+ * - frecuencia       : programada | demanda
+ * - estado           : pendiente | recogida | cancelada (según el flujo)
+ *
+ * Relaciones:
+ * - user()           : belongsTo User (autor de la solicitud)
+ * - recolecciones()  : hasMany Recoleccion (eventos de recolección realizados)
+ *
+ * Notas:
+ * - $fillable permite asignación masiva segura en create()/update().
+ * - $table fija el nombre de tabla explícitamente (buena práctica documental).
+ */
 class Solicitud extends Model
 {
-    // Usa el trait HasFactory para permitir la creación de factories
     use HasFactory;
 
-    // Especifica el nombre de la tabla asociada al modelo
+    /**
+     * Nombre de la tabla explícito (opcional si el plural fuera regular).
+     * En este proyecto lo dejamos para documentar la intención.
+     * @var string
+     */
     protected $table = 'solicitudes';
 
-    // Define los atributos que se pueden asignar de manera masiva
+    /**
+     * Atributos permitidos para asignación masiva.
+     * IMPORTANTE: mantén sincronizado este arreglo con las validaciones del controlador.
+     * @var array<int, string>
+     */
     protected $fillable = [
-        'user_id',           // ID del usuario que realiza la solicitud
-        'tipo_residuo',      // Tipo de residuo solicitado
-        'fecha_programada',  // Fecha en la que se programa la recolección
-        'frecuencia',        // Frecuencia de la recolección
-        'estado',            // Estado actual de la solicitud
+        'user_id',           // Usuario que realiza la solicitud
+        'tipo_residuo',      // Orgánico | Inorgánico | Peligroso
+        'fecha_programada',  // Fecha programada para la recolección (YYYY-MM-DD)
+        'frecuencia',        // programada | demanda
+        'estado',            // Estado del ciclo de la solicitud
     ];
 
-    // Relación: una solicitud pertenece a un usuario
+    /**
+     * Relación: la solicitud pertenece a un usuario.
+     * Permite acceder al autor: $solicitud->user
+     * @return \Illuminate\Database\Eloquent\Relations\BelongsTo
+     */
     public function user()
     {
-        // Define la relación de pertenencia con el modelo User
         return $this->belongsTo(User::class);
     }
 
-    // Relación: una solicitud puede tener muchas recolecciones asociadas
+    /**
+     * Relación: la solicitud puede tener varias recolecciones asociadas.
+     * Ej.: $solicitud->recolecciones()->latest()->get()
+     * @return \Illuminate\Database\Eloquent\Relations\HasMany
+     */
     public function recolecciones()
     {
-        // Define la relación de uno a muchos con el modelo Recoleccion
         return $this->hasMany(Recoleccion::class);
     }
 }
