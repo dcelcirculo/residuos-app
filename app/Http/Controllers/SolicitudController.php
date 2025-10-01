@@ -77,8 +77,30 @@ class SolicitudController extends Controller
     {
         $user = $request->user();
 
-        // Iniciar query desde las solicitudes del usuario autenticado
-        $query = $user->solicitudes();
+        // Admins necesitan visibilidad global de solicitudes
+        if ($user->isAdmin()) {
+            $query = Solicitud::query()->with('user');
+
+            // Filtrar por usuario específico (ID directo)
+            if ($request->filled('user_id')) {
+                $userId = (int) $request->input('user_id');
+                if ($userId > 0) {
+                    $query->where('user_id', $userId);
+                }
+            }
+
+            // Búsqueda por nombre o email del solicitante
+            if ($request->filled('user')) {
+                $needle = $request->string('user')->trim();
+                $query->whereHas('user', function ($sub) use ($needle) {
+                    $sub->where('name', 'like', "%{$needle}%")
+                        ->orWhere('email', 'like', "%{$needle}%");
+                });
+            }
+        } else {
+            // Usuarios normales sólo ven sus propias solicitudes
+            $query = $user->solicitudes();
+        }
 
         // 🔍 Búsqueda libre en id, tipo_residuo, frecuencia o estado
         if ($request->filled('q')) {

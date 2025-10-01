@@ -114,11 +114,18 @@ class AdminController extends Controller
         // - name: requerido
         // - email: requerido, formato email
         // - role: uno de los roles soportados
+        // - password: opcional, mínimo 8 caracteres y confirmado
         $validated = $request->validate([
             'name'  => ['required', 'string', 'max:255'],
             'email' => ['required', 'email'],
             'role'  => ['required', 'in:user,admin,recolector'],
+            'password' => ['nullable', 'string', 'min:8', 'confirmed'],
         ]);
+
+        // Si no se envía una nueva contraseña, mantener la actual
+        if (empty($validated['password'])) {
+            unset($validated['password']);
+        }
 
         // Actualiza los campos permitidos.
         $user->update($validated);

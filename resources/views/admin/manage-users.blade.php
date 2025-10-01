@@ -59,10 +59,16 @@
                         <div>
                             <label class="block text-sm">Nombre</label>
                             <input type="text" name="name" value="{{ $user->name }}" class="border rounded w-full px-2 py-1">
+                            @error('name')
+                                <p class="text-xs text-red-600 mt-1">{{ $message }}</p>
+                            @enderror
                         </div>
                         <div>
                             <label class="block text-sm">Email</label>
                             <input type="email" name="email" value="{{ $user->email }}" class="border rounded w-full px-2 py-1">
+                            @error('email')
+                                <p class="text-xs text-red-600 mt-1">{{ $message }}</p>
+                            @enderror
                         </div>
                         <div>
                             <label class="block text-sm">Rol</label>
@@ -71,6 +77,21 @@
                                 <option value="admin" {{ $user->role === 'admin' ? 'selected' : '' }}>Administrador</option>
                                 <option value="recolector" {{ $user->role === 'recolector' ? 'selected' : '' }}>Recolector</option>
                             </select>
+                            @error('role')
+                                <p class="text-xs text-red-600 mt-1">{{ $message }}</p>
+                            @enderror
+                        </div>
+                        <div>
+                            <label class="block text-sm">Contraseña nueva (opcional)</label>
+                            <input type="password" name="password" class="border rounded w-full px-2 py-1" placeholder="Ingresa una nueva contraseña si deseas cambiarla">
+                            <p class="text-xs text-gray-500 mt-1">Deja en blanco para mantener la contraseña actual. Mínimo 8 caracteres.</p>
+                            @error('password')
+                                <p class="text-xs text-red-600 mt-1">{{ $message }}</p>
+                            @enderror
+                        </div>
+                        <div>
+                            <label class="block text-sm">Confirmar contraseña</label>
+                            <input type="password" name="password_confirmation" class="border rounded w-full px-2 py-1" placeholder="Repite la nueva contraseña">
                         </div>
                         <button type="submit" class="px-4 py-2 bg-green-600 text-white rounded">Guardar cambios</button>
                     </form>
