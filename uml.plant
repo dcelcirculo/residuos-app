@@ -1,60 +1,107 @@
 @startuml
-skinparam style strictuml
+skinparam backgroundColor #FFFFFF
 skinparam classAttributeIconSize 0
-
-class User {
-  - id : int
-  - name : string
-  - email : string
-  - password : string
-  - role : string
-  + isAdmin() : bool
-  + isRecolector() : bool
-  + isUser() : bool
+skinparam class {
+  BackgroundColor #F7FAFC
+  BorderColor #2F855A
+  ArrowColor #2B6CB0
+  FontColor #1A202C
 }
 
-class Solicitud {
-  - id : int
-  - user_id : int
-  - tipo_residuo : string
-  - fecha_programada : date
-  - frecuencia : string
-  - estado : string
-  + user() : User
-  + recolecciones() : Recoleccion[*]
+hide stereotype circle
+hide methods
+
+package "Dominio" {
+  class User {
+    - id : int
+    - name : string
+    - email : string
+    - password : string
+    - role : string
+    + isAdmin() : bool
+    + isRecolector() : bool
+    + isUser() : bool
+    + solicitudes() : List<Solicitud>
+    + recolecciones() : List<Recoleccion>
+  }
+
+  class Solicitud {
+    - id : int
+    - user_id : int
+    - tipo_residuo : string
+    - fecha_programada : date
+    - frecuencia : string
+    - estado : string
+    + user() : User
+    + recolecciones() : List<Recoleccion>
+  }
+
+  class Recoleccion {
+    - id : int
+    - solicitud_id : int
+    - user_id : int
+    - fecha_real : datetime
+    - kilos : float
+    - puntos : int
+    + solicitud() : Solicitud
+    + recolector() : User
+  }
 }
 
-class Recoleccion {
-  - id : int
-  - solicitud_id : int
-  - user_id : int
-  - fecha_real : datetime
-  - kilos : float
-  - puntos : int
-  + solicitud() : Solicitud
-  + recolector() : User
+package "HTTP Controllers" {
+  class SolicitudController {
+    + index()
+    + create()
+    + store()
+    + export()
+    + update()
+    + destroy()
+  }
+
+  class RecoleccionController {
+    + index()
+    + store()
+    + update()
+  }
+
+  class AdminController {
+    + dashboard()
+    + users()
+    + manageUsers()
+    + searchUser()
+    + updateUser()
+    + deleteUser()
+  }
 }
 
-class SolicitudController {
-  + index()
-  + create()
-  + store()
-  + update()
-  + destroy()
+package Middleware {
+  class AdminMiddleware {
+    + handle(request, next)
+  }
 }
 
-class RecoleccionController {
-  + index()
-  + store()
-  + update()
-}
+User "1" -- "*" Solicitud : crea
+Solicitud "1" -- "*" Recoleccion : genera
+User "1" -- "*" Recoleccion : recolecta
 
-class AdminMiddleware {
-  + handle(request, next)
-}
+SolicitudController --> Solicitud : gestiona
+SolicitudController ..> User : auth()
+RecoleccionController --> Recoleccion : gestiona
+RecoleccionController ..> Solicitud : actualiza estado
+AdminController --> User : administra
+AdminController ..> Solicitud : métricas
+AdminController ..> Recoleccion : métricas
+AdminMiddleware ..> AdminController : protege
+AdminMiddleware ..> User : verifica rol
 
-User "1" -- "N" Solicitud : crea
-Solicitud "1" -- "N" Recoleccion : genera
-User "1" -- "N" Recoleccion : realiza (rol recolector)
+note right of Solicitud
+  estado ∈ {pendiente, en_proceso,
+            completada, cancelada}
+  frecuencia ∈ {programada, demanda}
+end note
+
+note right of User
+  role ∈ {user, admin, recolector}
+end note
 
 @enduml
