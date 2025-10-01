@@ -4,7 +4,7 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\SolicitudController;
 use App\Http\Controllers\RecoleccionController;
 use App\Http\Controllers\ProfileController;
-
+use App\Http\Controllers\AdminController;
 /*
 |--------------------------------------------------------------------------
 | Rutas Web de EcoGestión
@@ -47,6 +47,17 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
+
+    // Solo admin
+    Route::middleware('can:admin-only')->group(function () {
+        Route::get('/admin', [AdminController::class, 'dashboard'])->name('admin.dashboard');
+        Route::get('/admin/users', [AdminController::class, 'users'])->name('admin.users');
+        // Gestión puntual de usuarios (buscar / actualizar / eliminar)
+Route::get('/admin/users/manage', [AdminController::class, 'manageUsers'])->name('admin.users.manage');
+Route::post('/admin/users/search', [AdminController::class, 'searchUser'])->name('admin.users.search');
+Route::post('/admin/users/update/{id}', [AdminController::class, 'updateUser'])->name('admin.users.update');
+Route::delete('/admin/users/delete/{id}', [AdminController::class, 'deleteUser'])->name('admin.users.delete');
+    });
 });
 
 //

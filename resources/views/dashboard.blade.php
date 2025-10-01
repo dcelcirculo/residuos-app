@@ -1,14 +1,16 @@
 {{-- 
-    Vista: Dashboard (Menú principal de la aplicación)
+    Vista: Dashboard (Usuario)
     ----------------------------------------------------------------------------
-    Presenta accesos rápidos a las funcionalidades clave del sistema:
-    - Registrar, consultar, modificar y eliminar solicitudes
-    - Reportes de recolecciones
-    - Acceso al perfil del usuario
+    Menú principal para usuarios NO administradores en EcoGestión.
+    Ofrece accesos rápidos a:
+    - Registrar nueva solicitud
+    - Consultar / administrar solicitudes (editar/eliminar desde el listado)
+    - Reportes (historial de recolecciones del usuario)
+    - Perfil del usuario
 --}}
 
 <x-app-layout>
-    {{-- Encabezado del dashboard --}}
+    {{-- Encabezado del dashboard del usuario --}}
     <x-slot name="header">
         <h2 class="font-semibold text-xl text-gray-800 leading-tight">
             {{ __('Menú Principal') }}
@@ -22,7 +24,7 @@
             <div class="p-6 bg-white shadow sm:rounded-lg">
                 <h3 class="text-lg font-medium">Opciones del sistema</h3>
                 <ul class="mt-3 space-y-3">
-                    {{-- Crear nueva solicitud --}}
+                    {{-- Registrar nueva solicitud --}}
                     <li>
                         <a href="{{ route('solicitudes.create') }}"
                            class="block px-4 py-2 bg-blue-100 rounded hover:bg-blue-200">
@@ -30,7 +32,7 @@
                         </a>
                     </li>
 
-                    {{-- Listado/consulta de solicitudes --}}
+                    {{-- Listado/consulta de solicitudes (desde aquí también podrás editar/eliminar por fila) --}}
                     <li>
                         <a href="{{ route('solicitudes.index') }}"
                            class="block px-4 py-2 bg-blue-100 rounded hover:bg-blue-200">
@@ -38,27 +40,11 @@
                         </a>
                     </li>
 
-                    {{-- Modificar solicitud: de momento redirige al listado para elegir cuál editar --}}
-                    <li>
-                        <a href="{{ route('solicitudes.index') }}"
-                           class="block px-4 py-2 bg-blue-100 rounded hover:bg-blue-200">
-                            ✏️ Modificar solicitud
-                        </a>
-                    </li>
-
-                    {{-- Eliminar solicitud: también desde el listado (con botón eliminar por fila) --}}
-                    <li>
-                        <a href="{{ route('solicitudes.index') }}"
-                           class="block px-4 py-2 bg-blue-100 rounded hover:bg-blue-200">
-                            🗑️ Eliminar solicitud
-                        </a>
-                    </li>
-
-                    {{-- Reportes / historial de recolecciones --}}
+                    {{-- Reportes / historial de recolecciones del usuario --}}
                     <li>
                         <a href="{{ route('recolecciones.index') }}"
                            class="block px-4 py-2 bg-blue-100 rounded hover:bg-blue-200">
-                            📊 Reportes de recolecciones
+                            📊 Mis recolecciones
                         </a>
                     </li>
 
@@ -70,6 +56,17 @@
                         </a>
                     </li>
                 </ul>
+
+                {{-- Si el usuario también es admin, mostramos un atajo opcional al panel de admin --}}
+                @if(auth()->user()?->isAdmin())
+                    <div class="mt-6 border-t pt-4">
+                        <p class="text-sm text-gray-600 mb-2">Accesos de administración:</p>
+                        <a href="{{ route('admin.dashboard') }}"
+                           class="inline-block px-4 py-2 bg-yellow-100 rounded hover:bg-yellow-200">
+                            🛠️ Panel de administración
+                        </a>
+                    </div>
+                @endif
             </div>
 
         </div>

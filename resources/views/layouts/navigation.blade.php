@@ -38,7 +38,17 @@
                     <x-nav-link :href="route('dashboard')" :active="request()->routeIs('dashboard')">
                         {{ __('Dashboard') }}
                     </x-nav-link>
-                    {{-- Aquí se pueden agregar más enlaces de navegación si es necesario --}}
+                    {{-- Solo visible para administradores --}}
+@if(Auth::user()?->isAdmin())
+    <x-nav-link :href="route('admin.dashboard')" :active="request()->routeIs('admin.*')">
+        {{ __('Administración') }}
+    </x-nav-link>
+
+    {{-- (Opcional) Acceso directo al listado de usuarios del admin --}}
+    <x-nav-link :href="route('admin.users')" :active="request()->routeIs('admin.users')">
+        {{ __('Usuarios') }}
+    </x-nav-link>
+@endif
                 </div>
             </div>
 
@@ -59,6 +69,11 @@
                     </x-slot>
 
                     <x-slot name="content">
+                        @if(Auth::user()?->isAdmin())
+    <x-dropdown-link :href="route('admin.dashboard')">
+        {{ __('Administración') }}
+    </x-dropdown-link>
+@endif
                         {{-- Enlace para editar el perfil del usuario --}}
                         <x-dropdown-link :href="route('profile.edit')">
                             {{ __('Profile') }}
@@ -98,6 +113,15 @@
             <x-responsive-nav-link :href="route('dashboard')" :active="request()->routeIs('dashboard')">
                 {{ __('Dashboard') }}
             </x-responsive-nav-link>
+            {{-- Enlaces solo para administradores (responsive) --}}
+@if(Auth::user()?->isAdmin())
+    <x-responsive-nav-link :href="route('admin.dashboard')" :active="request()->routeIs('admin.*')">
+        {{ __('Administración') }}
+    </x-responsive-nav-link>
+    <x-responsive-nav-link :href="route('admin.users')" :active="request()->routeIs('admin.users')">
+        {{ __('Usuarios') }}
+    </x-responsive-nav-link>
+@endif
         </div>
 
         {{-- Opciones de usuario en menú responsive --}}
