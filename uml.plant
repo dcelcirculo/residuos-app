@@ -31,6 +31,7 @@ package "Dominio" {
     - tipo_residuo : string
     - fecha_programada : date
     - frecuencia : string
+    - recolecciones_por_semana : tinyint
     - estado : string
     + user() : User
     + recolecciones() : List<Recoleccion>
@@ -98,6 +99,7 @@ note right of Solicitud
   estado ∈ {pendiente, en_proceso,
             completada, cancelada}
   frecuencia ∈ {programada, demanda}
+  recolecciones_por_semana ∈ {1, 2}
 end note
 
 note right of User

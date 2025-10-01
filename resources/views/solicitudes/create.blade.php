@@ -33,10 +33,11 @@
                             </label>
                             {{-- Selector con las opciones que el backend valida:
                                  organico | inorganico | peligroso --}}
+                            @php $tipo = old('tipo_residuo', 'inorganico'); @endphp
                             <select name="tipo_residuo" class="mt-1 block w-full border-gray-300 rounded" required>
-                                <option value="organico">Orgánico</option>
-                                <option value="inorganico">Inorgánico</option>
-                                <option value="peligroso">Peligroso</option>
+                                <option value="organico" {{ $tipo === 'organico' ? 'selected' : '' }}>Orgánico</option>
+                                <option value="inorganico" {{ $tipo === 'inorganico' ? 'selected' : '' }}>Inorgánico</option>
+                                <option value="peligroso" {{ $tipo === 'peligroso' ? 'selected' : '' }}>Peligroso</option>
                             </select>
                             {{-- Mensaje mostrado si la validación del backend falla para este campo --}}
                             @error('tipo_residuo')
@@ -70,11 +71,25 @@
                             {{-- Selector con opciones validadas en el backend:
                                  programada | demanda --}}
                             <select name="frecuencia" class="mt-1 block w-full border-gray-300 rounded" required>
-                                <option value="programada">Programada</option>
-                                <option value="demanda">Por demanda</option>
+                                <option value="programada" {{ old('frecuencia') === 'programada' ? 'selected' : '' }}>Programada</option>
+                                <option value="demanda" {{ old('frecuencia') === 'demanda' ? 'selected' : '' }}>Por demanda</option>
                             </select>
                             {{-- Mensaje de error de validación para la frecuencia --}}
                             @error('frecuencia')
+                                <p class="text-red-600 text-sm mt-1">{{ $message }}</p>
+                            @enderror
+                        </div>
+
+                        {{-- Campo: Cantidad de recolecciones por semana --}}
+                        <div class="mb-6">
+                            <label class="block text-sm font-medium text-gray-700">
+                                Veces por semana
+                            </label>
+                            <select name="recolecciones_por_semana" class="mt-1 block w-full border-gray-300 rounded" required>
+                                <option value="1" {{ old('recolecciones_por_semana', '1') == '1' ? 'selected' : '' }}>1 vez</option>
+                                <option value="2" {{ old('recolecciones_por_semana') == '2' ? 'selected' : '' }}>2 veces</option>
+                            </select>
+                            @error('recolecciones_por_semana')
                                 <p class="text-red-600 text-sm mt-1">{{ $message }}</p>
                             @enderror
                         </div>

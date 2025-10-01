@@ -32,36 +32,11 @@
 
                 {{-- Lista vertical de opciones. Cada <li> contiene un enlace tipo botón. --}}
                 <ul class="mt-3 space-y-3">
-                    {{-- Acceso: Crear nueva solicitud --}}
-                    <li>
-                        <a href="{{ route('solicitudes.create') }}"
-                           class="block px-4 py-2 bg-blue-100 rounded hover:bg-blue-200">
-                            {{-- Icono textual + etiqueta --}}
-                            ➕ Registrar solicitud
-                        </a>
-                    </li>
-
-                    {{-- Acceso: Listado/consulta de solicitudes (desde allí también se edita/borra por fila) --}}
+                    {{-- Acceso: Listado/consulta de solicitudes --}}
                     <li>
                         <a href="{{ route('solicitudes.index') }}"
                            class="block px-4 py-2 bg-blue-100 rounded hover:bg-blue-200">
                             📋 Consultar solicitudes
-                        </a>
-                    </li>
-
-                    {{-- Acceso: Modificar solicitud (redirige al listado para seleccionar cuál editar) --}}
-                    <li>
-                        <a href="{{ route('solicitudes.index') }}"
-                           class="block px-4 py-2 bg-blue-100 rounded hover:bg-blue-200">
-                            ✏️ Modificar solicitud
-                        </a>
-                    </li>
-
-                    {{-- Acceso: Eliminar solicitud (también se hace desde el listado) --}}
-                    <li>
-                        <a href="{{ route('solicitudes.index') }}"
-                           class="block px-4 py-2 bg-blue-100 rounded hover:bg-blue-200">
-                            🗑️ Eliminar solicitud
                         </a>
                     </li>
 

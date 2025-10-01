@@ -18,10 +18,11 @@
 
                         <div class="mb-4">
                             <label class="block text-sm font-medium text-gray-700">Tipo de residuo</label>
+                            @php $tipo = old('tipo_residuo', $solicitud->tipo_residuo); @endphp
                             <select name="tipo_residuo" class="mt-1 block w-full border-gray-300 rounded" required>
-                                <option value="organico" {{ $solicitud->tipo_residuo==='organico'?'selected':'' }}>Orgánico</option>
-                                <option value="inorganico" {{ $solicitud->tipo_residuo==='inorganico'?'selected':'' }}>Inorgánico</option>
-                                <option value="peligroso" {{ $solicitud->tipo_residuo==='peligroso'?'selected':'' }}>Peligroso</option>
+                                <option value="organico" {{ $tipo==='organico'?'selected':'' }}>Orgánico</option>
+                                <option value="inorganico" {{ $tipo==='inorganico'?'selected':'' }}>Inorgánico</option>
+                                <option value="peligroso" {{ $tipo==='peligroso'?'selected':'' }}>Peligroso</option>
                             </select>
                             @error('tipo_residuo') <p class="text-red-600 text-sm mt-1">{{ $message }}</p> @enderror
                         </div>
@@ -36,20 +37,32 @@
 
                         <div class="mb-4">
                             <label class="block text-sm font-medium text-gray-700">Frecuencia</label>
+                            @php $frecuencia = old('frecuencia', $solicitud->frecuencia); @endphp
                             <select name="frecuencia" class="mt-1 block w-full border-gray-300 rounded" required>
-                                <option value="programada" {{ $solicitud->frecuencia==='programada'?'selected':'' }}>Programada</option>
-                                <option value="demanda" {{ $solicitud->frecuencia==='demanda'?'selected':'' }}>Por demanda</option>
+                                <option value="programada" {{ $frecuencia==='programada'?'selected':'' }}>Programada</option>
+                                <option value="demanda" {{ $frecuencia==='demanda'?'selected':'' }}>Por demanda</option>
                             </select>
                             @error('frecuencia') <p class="text-red-600 text-sm mt-1">{{ $message }}</p> @enderror
                         </div>
 
+                        <div class="mb-4">
+                            <label class="block text-sm font-medium text-gray-700">Veces por semana</label>
+                            <select name="recolecciones_por_semana" class="mt-1 block w-full border-gray-300 rounded" required>
+                                @php $veces = old('recolecciones_por_semana', (string) $solicitud->recolecciones_por_semana); @endphp
+                                <option value="1" {{ $veces == '1' ? 'selected' : '' }}>1 vez</option>
+                                <option value="2" {{ $veces == '2' ? 'selected' : '' }}>2 veces</option>
+                            </select>
+                            @error('recolecciones_por_semana') <p class="text-red-600 text-sm mt-1">{{ $message }}</p> @enderror
+                        </div>
+
                         <div class="mb-6">
                             <label class="block text-sm font-medium text-gray-700">Estado (opcional)</label>
+                            @php $estadoSel = old('estado', $solicitud->estado); @endphp
                             <select name="estado" class="mt-1 block w-full border-gray-300 rounded">
                                 <option value="">(sin cambio)</option>
-                                <option value="pendiente" {{ $solicitud->estado==='pendiente'?'selected':'' }}>Pendiente</option>
-                                <option value="recogida" {{ $solicitud->estado==='recogida'?'selected':'' }}>Recogida</option>
-                                <option value="cancelada" {{ $solicitud->estado==='cancelada'?'selected':'' }}>Cancelada</option>
+                                <option value="pendiente" {{ $estadoSel==='pendiente'?'selected':'' }}>Pendiente</option>
+                                <option value="recogida" {{ $estadoSel==='recogida'?'selected':'' }}>Recogida</option>
+                                <option value="cancelada" {{ $estadoSel==='cancelada'?'selected':'' }}>Cancelada</option>
                             </select>
                             @error('estado') <p class="text-red-600 text-sm mt-1">{{ $message }}</p> @enderror
                         </div>

@@ -37,7 +37,7 @@ class SolicitudController extends Controller
         fwrite($tmp, "\xEF\xBB\xBF"); // BOM
 
         // Encabezados del archivo
-        fputcsv($tmp, ['ID','Tipo residuo','Frecuencia','Estado','Fecha programada','Creado'], ';');
+        fputcsv($tmp, ['ID','Tipo residuo','Frecuencia','Veces semana','Estado','Fecha programada','Creado'], ';');
 
         // Filas con los datos de cada solicitud
         foreach ($query->orderBy('id')->cursor() as $s) {
@@ -45,6 +45,7 @@ class SolicitudController extends Controller
                 $s->id,
                 (string) $s->tipo_residuo,
                 (string) $s->frecuencia,
+                (int) $s->recolecciones_por_semana,
                 (string) ($s->estado ?? ''),
                 (string) $s->fecha_programada,
                 optional($s->created_at)->toDateTimeString(),
@@ -127,7 +128,7 @@ class SolicitudController extends Controller
         }
 
         // Ordenar resultados (default: created_at desc)
-        $sort = in_array($request->get('sort'), ['id','created_at','fecha_programada','estado'])
+        $sort = in_array($request->get('sort'), ['id','created_at','fecha_programada','estado','recolecciones_por_semana'])
             ? $request->get('sort')
             : 'created_at';
         $dir  = in_array($request->get('dir'),  ['asc','desc'])
@@ -157,6 +158,7 @@ class SolicitudController extends Controller
             'tipo_residuo'     => 'required|in:organico,inorganico,peligroso',
             'fecha_programada' => 'required|date',
             'frecuencia'       => 'required|in:programada,demanda',
+            'recolecciones_por_semana' => 'required|integer|in:1,2',
         ]);
 
         // Asociar solicitud al usuario autenticado  y estado inicial
@@ -202,6 +204,7 @@ class SolicitudController extends Controller
         'tipo_residuo'     => 'required|in:organico,inorganico,peligroso',
         'fecha_programada' => 'required|date|after_or_equal:today',
         'frecuencia'       => 'required|in:programada,demanda',
+        'recolecciones_por_semana' => 'required|integer|in:1,2',
         'estado'           => 'nullable|in:pendiente,recogida,cancelada',
     ]);
 

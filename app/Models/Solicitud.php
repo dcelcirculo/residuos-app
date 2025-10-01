@@ -46,6 +46,7 @@ class Solicitud extends Model
         'tipo_residuo',      // Orgánico | Inorgánico | Peligroso
         'fecha_programada',  // Fecha programada para la recolección (YYYY-MM-DD)
         'frecuencia',        // programada | demanda
+        'recolecciones_por_semana', // Número de recolecciones semanales (1 o 2)
         'estado',            // Estado del ciclo de la solicitud
     ];
 
