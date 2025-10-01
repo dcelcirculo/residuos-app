@@ -137,8 +137,9 @@ class SolicitudController extends Controller
             'frecuencia'       => 'required|in:programada,demanda',
         ]);
 
-        // Asociar solicitud al usuario autenticado
+        // Asociar solicitud al usuario autenticado  y estado inicial
         $data['user_id'] = auth()->id();
+        $data['estado']  = 'pendiente'; // ← estado por defecto
 
         // Crear registro en DB
         Solicitud::create($data);
@@ -159,28 +160,42 @@ class SolicitudController extends Controller
 
     /**
      * Mostrar formulario de edición de una solicitud.
-     * (Por implementar).
      */
     public function edit(Solicitud $solicitud)
     {
-        //
+        // Seguridad: sólo el dueño puede editar su solicitud
+    abort_unless($solicitud->user_id === auth()->id(), 403);
+    return view('solicitudes.edit', compact('solicitud'));
     }
 
     /**
      * Actualizar una solicitud existente.
-     * (Por implementar).
      */
     public function update(Request $request, Solicitud $solicitud)
-    {
-        //
-    }
+{
+    // Seguridad: sólo el dueño puede actualizar su solicitud
+    abort_unless($solicitud->user_id === auth()->id(), 403);
+
+    $data = $request->validate([
+        'tipo_residuo'     => 'required|in:organico,inorganico,peligroso',
+        'fecha_programada' => 'required|date|after_or_equal:today',
+        'frecuencia'       => 'required|in:programada,demanda',
+        'estado'           => 'nullable|in:pendiente,recogida,cancelada',
+    ]);
+
+    $solicitud->update($data);
+    return redirect()->route('solicitudes.index')->with('ok','Solicitud actualizada');
+}
 
     /**
      * Eliminar una solicitud.
-     * (Por implementar).
      */
     public function destroy(Solicitud $solicitud)
-    {
-        //
-    }
+{
+    // Seguridad: sólo el dueño puede eliminar su solicitud
+    abort_unless($solicitud->user_id === auth()->id(), 403);
+
+    $solicitud->delete();
+    return back()->with('ok','Solicitud eliminada');
+}
 }

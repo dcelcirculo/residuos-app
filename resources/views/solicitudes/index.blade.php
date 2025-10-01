@@ -122,9 +122,21 @@
                         </td>
                         <td class="px-4 py-2 text-sm">{{ optional($s->created_at)->format('Y-m-d H:i') }}</td>
                         <td class="px-4 py-2 text-sm text-right">
-                            <div class="inline-flex gap-3">
+                            {{-- Acciones por fila: Ver / Editar / Eliminar --}}
+                            <div class="inline-flex items-center gap-3">
                                 <a href="{{ route('solicitudes.show', $s) }}" class="text-indigo-600 hover:text-indigo-900">Ver</a>
                                 <a href="{{ route('solicitudes.edit', $s) }}" class="text-gray-600 hover:text-gray-900">Editar</a>
+
+                                {{-- Formulario inline para eliminar esta solicitud (la de esta fila) --}}
+                                <form method="POST" action="{{ route('solicitudes.destroy', $s) }}"
+                                      onsubmit="return confirm('¿Eliminar esta solicitud #{{ $s->id }}?')"
+                                      class="inline">
+                                    @csrf
+                                    @method('DELETE')
+                                    <button type="submit" class="text-red-600 hover:text-red-800">
+                                        Eliminar
+                                    </button>
+                                </form>
                             </div>
                         </td>
                     </tr>
