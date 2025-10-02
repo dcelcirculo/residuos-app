@@ -54,6 +54,12 @@
             <x-input-error class="mt-2" :messages="$errors->get('phone')" />
         </div>
 
+        <div>
+            <x-input-label for="localidad" :value="__('Localidad')" />
+            <x-text-input id="localidad" name="localidad" type="text" class="mt-1 block w-full" :value="old('localidad', $user->localidad)" autocomplete="address-level2" />
+            <x-input-error class="mt-2" :messages="$errors->get('localidad')" />
+        </div>
+
         <div class="flex items-center gap-4">
             <x-primary-button>{{ __('Save') }}</x-primary-button>
 

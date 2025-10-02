@@ -79,9 +79,11 @@ class AdminController extends Controller
     {
         $formula = $pointsCalculator->getFormula();
         $tiposResiduos = self::RESIDUE_TYPES;
+        $recoleccionesComoVecino = collect();
+        $recoleccionesComoRecolector = collect();
 
         // Solo retorna la vista; la variable $user se inyectará cuando exista resultado de búsqueda.
-        return view('admin.manage-users', compact('formula', 'tiposResiduos'));
+        return view('admin.manage-users', compact('formula', 'tiposResiduos', 'recoleccionesComoVecino', 'recoleccionesComoRecolector'));
     }
 
     /**
@@ -94,12 +96,13 @@ class AdminController extends Controller
             'email' => ['required', 'email', 'max:255', 'unique:users,email'],
             'phone' => ['nullable', 'string', 'regex:/^\+?[1-9]\d{7,14}$/'],
             'role' => ['required', 'in:user,admin,empresa'],
+            'localidad' => ['nullable', 'string', 'max:120'],
             'password' => ['required', 'string', 'min:8', 'confirmed'],
             'especialidades' => ['required_if:role,empresa', 'array', 'min:1'],
             'especialidades.*' => ['in:'.implode(',', self::RESIDUE_TYPES)],
         ]);
 
-        $payload = Arr::only($data, ['name', 'email', 'phone', 'role']);
+        $payload = Arr::only($data, ['name', 'email', 'phone', 'role', 'localidad']);
         $payload['password'] = Hash::make($data['password']);
 
         $user = User::create($payload);
@@ -134,8 +137,22 @@ class AdminController extends Controller
         // Renderiza la misma vista de gestión, ahora con $user (o null si no hubo match).
         $formula = $pointsCalculator->getFormula();
         $tiposResiduos = self::RESIDUE_TYPES;
+        $recoleccionesComoVecino = collect();
+        $recoleccionesComoRecolector = collect();
 
-        return view('admin.manage-users', compact('user', 'formula', 'tiposResiduos'));
+        if ($user) {
+            $recoleccionesComoVecino = Recoleccion::with('recolector')
+                ->whereHas('solicitud', fn($q) => $q->where('user_id', $user->id))
+                ->orderByDesc('fecha_real')
+                ->get();
+
+            $recoleccionesComoRecolector = Recoleccion::with(['solicitud.user'])
+                ->where('user_id', $user->id)
+                ->orderByDesc('fecha_real')
+                ->get();
+        }
+
+        return view('admin.manage-users', compact('user', 'formula', 'tiposResiduos', 'recoleccionesComoVecino', 'recoleccionesComoRecolector'));
     }
 
     public function updatePointsFormula(Request $request, PointsCalculator $pointsCalculator)
@@ -178,6 +195,7 @@ class AdminController extends Controller
             'email' => ['required', 'email'],
             'role'  => ['required', 'in:user,admin,empresa'],
             'phone' => ['nullable', 'string', 'regex:/^\+?[1-9]\d{7,14}$/'],
+            'localidad' => ['nullable', 'string', 'max:120'],
             'password' => ['nullable', 'string', 'min:8', 'confirmed'],
             'especialidades' => ['required_if:role,empresa', 'array', 'min:1'],
             'especialidades.*' => ['in:'.implode(',', self::RESIDUE_TYPES)],
@@ -215,6 +233,23 @@ class AdminController extends Controller
         } else {
             $user->empresaRecolectora()->delete();
         }
+    }
+
+    public function updateRecoleccion(Request $request, Recoleccion $recoleccion, PointsCalculator $pointsCalculator)
+    {
+        $validated = $request->validate([
+            'cumple_separacion' => ['required', 'boolean'],
+        ]);
+
+        $cumple = (bool) $validated['cumple_separacion'];
+        $puntos = $cumple ? $pointsCalculator->calculate((float) $recoleccion->kilos) : 0;
+
+        $recoleccion->update([
+            'cumple_separacion' => $cumple,
+            'puntos' => $puntos,
+        ]);
+
+        return back()->with('ok', 'Recolección actualizada correctamente.');
     }
 
     /**

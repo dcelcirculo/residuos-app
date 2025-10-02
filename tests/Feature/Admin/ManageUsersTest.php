@@ -2,6 +2,9 @@
 
 namespace Tests\Feature\Admin;
 
+use App\Models\EmpresaRecolectora;
+use App\Models\Recoleccion;
+use App\Models\Solicitud;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
@@ -25,6 +28,8 @@ class ManageUsersTest extends TestCase
                 'password' => 'password123',
                 'password_confirmation' => 'password123',
             ];
+
+            $payload['localidad'] = 'Localidad '.$index;
 
             if ($role === 'empresa') {
                 $payload['especialidades'] = ['organico', 'inorganico'];
@@ -78,6 +83,51 @@ class ManageUsersTest extends TestCase
         $this->assertDatabaseHas('settings', [
             'key' => 'points.formula',
             'value' => 'min(floor(kilos * 15), 1000)',
+        ]);
+    }
+
+    public function test_admin_can_update_recoleccion_compliance(): void
+    {
+        $admin = User::factory()->create(['role' => 'admin']);
+        $company = User::factory()->create(['role' => 'empresa']);
+        EmpresaRecolectora::create([
+            'user_id' => $company->id,
+            'nombre' => $company->name,
+            'especialidades' => ['organico'],
+        ]);
+
+        $neighbor = User::factory()->create(['role' => 'user']);
+
+        $solicitud = Solicitud::create([
+            'user_id' => $neighbor->id,
+            'tipo_residuo' => 'organico',
+            'fecha_programada' => now()->toDateString(),
+            'frecuencia' => 'programada',
+            'recolecciones_por_semana' => 1,
+            'turno_ruta' => 6,
+            'estado' => 'pendiente',
+        ]);
+
+        $recoleccion = Recoleccion::create([
+            'solicitud_id' => $solicitud->id,
+            'user_id' => $company->id,
+            'fecha_real' => now(),
+            'kilos' => 5,
+            'puntos' => 0,
+            'cumple_separacion' => false,
+        ]);
+
+        $this->from(route('admin.users.manage'))
+            ->actingAs($admin)
+            ->patch(route('admin.recolecciones.update', $recoleccion), [
+                'cumple_separacion' => 1,
+            ])
+            ->assertRedirect(route('admin.users.manage'));
+
+        $this->assertDatabaseHas('recolecciones', [
+            'id' => $recoleccion->id,
+            'cumple_separacion' => true,
+            'puntos' => 50,
         ]);
     }
 }

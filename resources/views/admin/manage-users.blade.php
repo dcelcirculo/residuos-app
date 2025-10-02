@@ -26,6 +26,8 @@
                     'inorganico' => 'Inorgánico',
                     'peligroso' => 'Peligroso',
                 ];
+                $recoleccionesComoVecino = $recoleccionesComoVecino ?? collect();
+                $recoleccionesComoRecolector = $recoleccionesComoRecolector ?? collect();
             @endphp
 
             {{-- Panel: Alta rápida de usuarios (todos los roles) --}}
@@ -86,6 +88,14 @@
                         <input type="tel" name="phone" value="{{ old('phone') }}" class="border rounded w-full px-2 py-1" placeholder="+57XXXXXXXXXX">
                         <p class="text-xs text-gray-500 mt-1">Formato E.164, opcional pero recomendado para notificaciones.</p>
                         @error('phone', 'createUser')
+                            <p class="text-xs text-red-600 mt-1">{{ $message }}</p>
+                        @enderror
+                    </div>
+
+                    <div>
+                        <label class="block text-sm">Localidad</label>
+                        <input type="text" name="localidad" value="{{ old('localidad') }}" class="border rounded w-full px-2 py-1" placeholder="Ej. Chapinero">
+                        @error('localidad', 'createUser')
                             <p class="text-xs text-red-600 mt-1">{{ $message }}</p>
                         @enderror
                     </div>
@@ -195,6 +205,13 @@
                             @enderror
                         </div>
                         <div>
+                            <label class="block text-sm">Localidad</label>
+                            <input type="text" name="localidad" value="{{ $user->localidad }}" class="border rounded w-full px-2 py-1" placeholder="Ej. Chapinero">
+                            @error('localidad')
+                                <p class="text-xs text-red-600 mt-1">{{ $message }}</p>
+                            @enderror
+                        </div>
+                        <div>
                             <label class="block text-sm">Rol</label>
                             <select name="role" id="edit-role" class="border rounded w-full px-2 py-1" data-toggle-especialidades="edit">
                                 <option value="user" {{ $user->role === 'user' ? 'selected' : '' }}>Usuario</option>
@@ -245,6 +262,90 @@
                             Eliminar usuario
                         </button>
                     </form>
+
+                    @if($recoleccionesComoVecino->isNotEmpty())
+                        <div class="mt-6">
+                            <h4 class="text-md font-semibold mb-3">Recolecciones (como vecino)</h4>
+                            <div class="overflow-x-auto">
+                                <table class="min-w-full border border-gray-200 text-sm">
+                                    <thead class="bg-gray-100">
+                                        <tr>
+                                            <th class="px-3 py-2 border">ID</th>
+                                            <th class="px-3 py-2 border">Recolector</th>
+                                            <th class="px-3 py-2 border">Fecha</th>
+                                            <th class="px-3 py-2 border">Kilos</th>
+                                            <th class="px-3 py-2 border">Cumple separación</th>
+                                            <th class="px-3 py-2 border">Acciones</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        @foreach($recoleccionesComoVecino as $recoleccion)
+                                            <tr class="hover:bg-gray-50">
+                                                <td class="border px-3 py-2">{{ $recoleccion->id }}</td>
+                                                <td class="border px-3 py-2">{{ optional($recoleccion->recolector)->name ?? '—' }}</td>
+                                                <td class="border px-3 py-2">{{ optional($recoleccion->fecha_real)->format('Y-m-d H:i') }}</td>
+                                                <td class="border px-3 py-2">{{ number_format($recoleccion->kilos, 2) }}</td>
+                                                <td class="border px-3 py-2">{{ $recoleccion->cumple_separacion ? 'Sí' : 'No' }}</td>
+                                                <td class="border px-3 py-2">
+                                                    <form method="POST" action="{{ route('admin.recolecciones.update', $recoleccion) }}" class="flex items-center gap-2">
+                                                        @csrf
+                                                        @method('PATCH')
+                                                        <select name="cumple_separacion" class="border rounded px-2 py-1 text-sm">
+                                                            <option value="1" @selected($recoleccion->cumple_separacion)>Sí</option>
+                                                            <option value="0" @selected(! $recoleccion->cumple_separacion)>No</option>
+                                                        </select>
+                                                        <button type="submit" class="px-3 py-1 bg-indigo-600 text-white rounded text-xs">Guardar</button>
+                                                    </form>
+                                                </td>
+                                            </tr>
+                                        @endforeach
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    @endif
+
+                    @if($recoleccionesComoRecolector->isNotEmpty())
+                        <div class="mt-6">
+                            <h4 class="text-md font-semibold mb-3">Recolecciones registradas por la empresa</h4>
+                            <div class="overflow-x-auto">
+                                <table class="min-w-full border border-gray-200 text-sm">
+                                    <thead class="bg-gray-100">
+                                        <tr>
+                                            <th class="px-3 py-2 border">ID</th>
+                                            <th class="px-3 py-2 border">Vecino</th>
+                                            <th class="px-3 py-2 border">Fecha</th>
+                                            <th class="px-3 py-2 border">Kilos</th>
+                                            <th class="px-3 py-2 border">Cumple separación</th>
+                                            <th class="px-3 py-2 border">Acciones</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        @foreach($recoleccionesComoRecolector as $recoleccion)
+                                            <tr class="hover:bg-gray-50">
+                                                <td class="border px-3 py-2">{{ $recoleccion->id }}</td>
+                                                <td class="border px-3 py-2">{{ optional(optional($recoleccion->solicitud)->user)->name ?? '—' }}</td>
+                                                <td class="border px-3 py-2">{{ optional($recoleccion->fecha_real)->format('Y-m-d H:i') }}</td>
+                                                <td class="border px-3 py-2">{{ number_format($recoleccion->kilos, 2) }}</td>
+                                                <td class="border px-3 py-2">{{ $recoleccion->cumple_separacion ? 'Sí' : 'No' }}</td>
+                                                <td class="border px-3 py-2">
+                                                    <form method="POST" action="{{ route('admin.recolecciones.update', $recoleccion) }}" class="flex items-center gap-2">
+                                                        @csrf
+                                                        @method('PATCH')
+                                                        <select name="cumple_separacion" class="border rounded px-2 py-1 text-sm">
+                                                            <option value="1" @selected($recoleccion->cumple_separacion)>Sí</option>
+                                                            <option value="0" @selected(! $recoleccion->cumple_separacion)>No</option>
+                                                        </select>
+                                                        <button type="submit" class="px-3 py-1 bg-indigo-600 text-white rounded text-xs">Guardar</button>
+                                                    </form>
+                                                </td>
+                                            </tr>
+                                        @endforeach
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    @endif
                 </div>
             @endisset
 
@@ -263,12 +364,15 @@
 
                     if (event.target.value === 'empresa') {
                         wrapper.classList.remove('hidden');
-                        wrapper.querySelectorAll('input[type="checkbox"]').forEach(cb => cb.required = true);
                     } else {
                         wrapper.classList.add('hidden');
-                        wrapper.querySelectorAll('input[type="checkbox"]').forEach(cb => cb.required = false);
+                        wrapper.querySelectorAll('input[type="checkbox"]').forEach(cb => {
+                            cb.checked = false;
+                        });
                     }
                 });
+
+                select.dispatchEvent(new Event('change'));
             });
         });
     </script>

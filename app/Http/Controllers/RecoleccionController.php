@@ -73,13 +73,18 @@ class RecoleccionController extends Controller
         // 1) Validar datos de entrada:
         //    - solicitud_id debe existir en la tabla 'solicitudes'
         //    - kilos debe ser numérico y > 0
-        $data = $request->validate([
+        $rules = [
             'solicitud_id' => 'required|exists:solicitudes,id',
             'kilos'        => 'required|numeric|min:0.1',
-            'cumple_separacion' => 'required|boolean',
-        ]);
+        ];
 
         $user = auth()->user();
+
+        if ($user->isEmpresaRecolectora()) {
+            $rules['cumple_separacion'] = 'required|boolean';
+        }
+
+        $data = $request->validate($rules);
 
         if ($user->isEmpresaRecolectora()) {
             $solicitud = Solicitud::with('user')->findOrFail($data['solicitud_id']);
@@ -98,7 +103,9 @@ class RecoleccionController extends Controller
         }
 
         // 3) Calcular puntos según cumplimiento y fórmula dinámica.
-        $cumple = (bool) $data['cumple_separacion'];
+        $cumple = $user->isEmpresaRecolectora()
+            ? (bool) $data['cumple_separacion']
+            : false;
         $puntos = $cumple ? $this->pointsCalculator->calculate((float) $data['kilos']) : 0;
 
         // 4) Crear la recolección con los datos calculados.
@@ -197,19 +204,30 @@ class RecoleccionController extends Controller
      */
     public function update(Request $request, Recoleccion $recoleccion)
     {
-        // 1) Regla de autorización: la solicitud asociada debe ser del usuario autenticado.
-        if ($recoleccion->solicitud->user_id !== auth()->id()) {
-            abort(403); // Prohibido si intenta modificar algo que no es suyo.
+        $user = auth()->user();
+
+        // 1) Regla de autorización: sólo el actor original (empresa o usuario) o un admin pueden editar.
+        if (! $user->isAdmin() && $recoleccion->user_id !== $user->id) {
+            abort(403);
         }
 
-        // 2) Validar el dato de kilos (mismo criterio del store).
-        $data = $request->validate([
+        // 2) Validar los datos enviados.
+        $rules = [
             'kilos' => 'required|numeric|min:0.1',
-            'cumple_separacion' => 'required|boolean',
-        ]);
+        ];
+
+        if ($user->isEmpresaRecolectora() || $user->isAdmin()) {
+            $rules['cumple_separacion'] = 'required|boolean';
+        }
+
+        $data = $request->validate($rules);
 
         // 3) Recalcular puntos con la nueva cantidad de kilos.
-        $cumple = (bool) $data['cumple_separacion'];
+        $cumple = match (true) {
+            $user->isAdmin() => (bool) $data['cumple_separacion'],
+            $user->isEmpresaRecolectora() => (bool) $data['cumple_separacion'],
+            default => false,
+        };
         $puntos = $cumple ? $this->pointsCalculator->calculate((float) $data['kilos']) : 0;
 
         // 4) Persistir cambios en la recolección.

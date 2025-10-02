@@ -30,6 +30,11 @@ class ProfileUpdateRequest extends FormRequest
                 'string',
                 'regex:/^\+?[1-9]\d{7,14}$/',
             ],
+            'localidad' => [
+                'nullable',
+                'string',
+                'max:120',
+            ],
         ];
     }
 }

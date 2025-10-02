@@ -5,6 +5,7 @@ use App\Http\Controllers\SolicitudController;
 use App\Http\Controllers\RecoleccionController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\AdminController;
+use App\Http\Controllers\ReportsController;
 /*
 |--------------------------------------------------------------------------
 | Rutas Web de EcoGestión
@@ -51,16 +52,25 @@ Route::middleware(['auth'])->group(function () {
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 
     // Solo admin
-Route::middleware('can:admin-only')->group(function () {
+    Route::middleware('can:admin-only')->group(function () {
         Route::get('/admin', [AdminController::class, 'dashboard'])->name('admin.dashboard');
         Route::get('/admin/users', [AdminController::class, 'users'])->name('admin.users');
+
         // Gestión puntual de usuarios (buscar / actualizar / eliminar)
-Route::get('/admin/users/manage', [AdminController::class, 'manageUsers'])->name('admin.users.manage');
-Route::post('/admin/users/search', [AdminController::class, 'searchUser'])->name('admin.users.search');
-Route::post('/admin/users/update/{id}', [AdminController::class, 'updateUser'])->name('admin.users.update');
-Route::delete('/admin/users/delete/{id}', [AdminController::class, 'deleteUser'])->name('admin.users.delete');
-Route::post('/admin/users', [AdminController::class, 'storeUser'])->name('admin.users.store');
-Route::post('/admin/settings/points', [AdminController::class, 'updatePointsFormula'])->name('admin.settings.points');
+        Route::get('/admin/users/manage', [AdminController::class, 'manageUsers'])->name('admin.users.manage');
+        Route::post('/admin/users/search', [AdminController::class, 'searchUser'])->name('admin.users.search');
+        Route::post('/admin/users/update/{id}', [AdminController::class, 'updateUser'])->name('admin.users.update');
+        Route::delete('/admin/users/delete/{id}', [AdminController::class, 'deleteUser'])->name('admin.users.delete');
+        Route::post('/admin/users', [AdminController::class, 'storeUser'])->name('admin.users.store');
+
+        Route::post('/admin/settings/points', [AdminController::class, 'updatePointsFormula'])->name('admin.settings.points');
+
+        // Reportes para administradores
+        Route::get('/admin/reports/usuarios', [ReportsController::class, 'userReport'])->name('reports.user');
+        Route::get('/admin/reports/global', [ReportsController::class, 'usersSummary'])->name('reports.users');
+        Route::get('/admin/reports/empresas', [ReportsController::class, 'companyReport'])->name('reports.company');
+
+        Route::patch('/admin/recolecciones/{recoleccion}', [AdminController::class, 'updateRecoleccion'])->name('admin.recolecciones.update');
     });
 });
 

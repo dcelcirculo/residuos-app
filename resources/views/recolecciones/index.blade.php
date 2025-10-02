@@ -97,17 +97,22 @@
                             </div>
 
                             {{-- Cumplimiento de separación --}}
-                            <div>
-                                <label class="block text-sm font-medium text-gray-700">Separación adecuada</label>
-                                <input type="hidden" name="cumple_separacion" value="0">
-                                <label class="inline-flex items-center gap-2 mt-1 text-sm text-gray-700">
-                                    <input type="checkbox" name="cumple_separacion" value="1" class="rounded border-gray-300" required @checked(old('cumple_separacion', '0') == '1')>
-                                    Confirmo que el residuo fue entregado cumpliendo los requisitos de separación.
-                                </label>
-                                @error('cumple_separacion')
-                                    <p class="text-red-600 text-sm mt-1">{{ $message }}</p>
-                                @enderror
-                            </div>
+                            @if($isEmpresa)
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700">Separación adecuada</label>
+                                    <label class="inline-flex items-center gap-2 mt-1 text-sm text-gray-700">
+                                        <input type="checkbox" name="cumple_separacion" value="1" class="rounded border-gray-300" required>
+                                        Confirmo que el residuo fue entregado cumpliendo los requisitos de separación.
+                                    </label>
+                                    @error('cumple_separacion')
+                                        <p class="text-red-600 text-sm mt-1">{{ $message }}</p>
+                                    @enderror
+                                </div>
+                            @else
+                                <p class="text-xs text-gray-500">
+                                    El cumplimiento de separación será verificado por la empresa recolectora.
+                                </p>
+                            @endif
 
                             {{-- Botón para guardar la recolección --}}
                             <button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded">

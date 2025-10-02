@@ -43,13 +43,20 @@ class RecoleccionPointsTest extends TestCase
         $this->actingAs($user)->post(route('recolecciones.store'), [
             'solicitud_id' => $solicitud->id,
             'kilos' => 5,
-            'cumple_separacion' => 0,
+            'cumple_separacion' => 1,
         ])->assertRedirect(route('recolecciones.index'));
 
         $this->assertDatabaseHas('recolecciones', [
             'solicitud_id' => $solicitud->id,
             'puntos' => 0,
             'cumple_separacion' => false,
+        ]);
+
+        $recolector = User::factory()->create(['role' => 'empresa']);
+        EmpresaRecolectora::create([
+            'user_id' => $recolector->id,
+            'nombre' => $recolector->name,
+            'especialidades' => ['inorganico'],
         ]);
 
         $segundaSolicitud = Solicitud::create([
@@ -62,7 +69,7 @@ class RecoleccionPointsTest extends TestCase
             'estado' => 'pendiente',
         ]);
 
-        $this->actingAs($user)->post(route('recolecciones.store'), [
+        $this->actingAs($recolector)->post(route('recolecciones.store'), [
             'solicitud_id' => $segundaSolicitud->id,
             'kilos' => 5,
             'cumple_separacion' => 1,

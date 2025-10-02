@@ -48,6 +48,17 @@
     <x-nav-link :href="route('admin.users')" :active="request()->routeIs('admin.users')">
         {{ __('Usuarios') }}
     </x-nav-link>
+
+    {{-- Accesos directos a los reportes administrativos --}}
+    <x-nav-link :href="route('reports.user')" :active="request()->routeIs('reports.user')">
+        {{ __('Reporte vecinos') }}
+    </x-nav-link>
+    <x-nav-link :href="route('reports.users')" :active="request()->routeIs('reports.users')">
+        {{ __('Reporte global') }}
+    </x-nav-link>
+    <x-nav-link :href="route('reports.company')" :active="request()->routeIs('reports.company')">
+        {{ __('Reporte empresas') }}
+    </x-nav-link>
 @endif
                 </div>
             </div>
@@ -120,6 +131,15 @@
     </x-responsive-nav-link>
     <x-responsive-nav-link :href="route('admin.users')" :active="request()->routeIs('admin.users')">
         {{ __('Usuarios') }}
+    </x-responsive-nav-link>
+    <x-responsive-nav-link :href="route('reports.user')" :active="request()->routeIs('reports.user')">
+        {{ __('Reporte vecinos') }}
+    </x-responsive-nav-link>
+    <x-responsive-nav-link :href="route('reports.users')" :active="request()->routeIs('reports.users')">
+        {{ __('Reporte global') }}
+    </x-responsive-nav-link>
+    <x-responsive-nav-link :href="route('reports.company')" :active="request()->routeIs('reports.company')">
+        {{ __('Reporte empresas') }}
     </x-responsive-nav-link>
 @endif
         </div>
