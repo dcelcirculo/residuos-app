@@ -40,6 +40,8 @@ Route::middleware(['auth'])->group(function () {
         ->whereNumber('solicitud');
 
     // Recurso parcial para Recolecciones (sólo index/store/update)
+    Route::get('recolecciones/export', [RecoleccionController::class, 'export'])
+        ->name('recolecciones.export');
     Route::resource('recolecciones', RecoleccionController::class)
         ->only(['index','store','update']);
 
@@ -49,7 +51,7 @@ Route::middleware(['auth'])->group(function () {
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 
     // Solo admin
-    Route::middleware('can:admin-only')->group(function () {
+Route::middleware('can:admin-only')->group(function () {
         Route::get('/admin', [AdminController::class, 'dashboard'])->name('admin.dashboard');
         Route::get('/admin/users', [AdminController::class, 'users'])->name('admin.users');
         // Gestión puntual de usuarios (buscar / actualizar / eliminar)
@@ -57,6 +59,8 @@ Route::get('/admin/users/manage', [AdminController::class, 'manageUsers'])->name
 Route::post('/admin/users/search', [AdminController::class, 'searchUser'])->name('admin.users.search');
 Route::post('/admin/users/update/{id}', [AdminController::class, 'updateUser'])->name('admin.users.update');
 Route::delete('/admin/users/delete/{id}', [AdminController::class, 'deleteUser'])->name('admin.users.delete');
+Route::post('/admin/users', [AdminController::class, 'storeUser'])->name('admin.users.store');
+Route::post('/admin/settings/points', [AdminController::class, 'updatePointsFormula'])->name('admin.settings.points');
     });
 });
 

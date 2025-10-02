@@ -55,6 +55,12 @@
                             @error('recolecciones_por_semana') <p class="text-red-600 text-sm mt-1">{{ $message }}</p> @enderror
                         </div>
 
+                        <div class="mb-4">
+                            <label class="block text-sm font-medium text-gray-700">Turno en la ruta</label>
+                            <input type="number" name="turno_ruta" min="1" max="500" value="{{ old('turno_ruta', $solicitud->turno_ruta) }}" class="mt-1 block w-full border-gray-300 rounded" required>
+                            @error('turno_ruta') <p class="text-red-600 text-sm mt-1">{{ $message }}</p> @enderror
+                        </div>
+
                         <div class="mb-6">
                             <label class="block text-sm font-medium text-gray-700">Estado (opcional)</label>
                             @php $estadoSel = old('estado', $solicitud->estado); @endphp

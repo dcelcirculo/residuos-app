@@ -112,6 +112,9 @@
                     <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Frecuencia</th>
                     <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Veces/semana</th>
                     <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                        <a href="{{ route('solicitudes.index', $toggle('turno_ruta')) }}">Turno</a>
+                    </th>
+                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
                         <a href="{{ route('solicitudes.index', $toggle('fecha_programada')) }}">Fecha programada</a>
                     </th>
                     <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
@@ -138,6 +141,7 @@
                         <td class="px-4 py-2 text-sm">{{ ucfirst($s->tipo_residuo ?? '—') }}</td>
                         <td class="px-4 py-2 text-sm">{{ ucfirst($s->frecuencia ?? '—') }}</td>
                         <td class="px-4 py-2 text-sm">{{ $s->recolecciones_por_semana }}</td>
+                        <td class="px-4 py-2 text-sm">{{ $s->turno_ruta ?? '—' }}</td>
                         <td class="px-4 py-2 text-sm">{{ (string) $s->fecha_programada }}</td>
                         <td class="px-4 py-2 text-sm">
                             @php
@@ -179,7 +183,7 @@
                     </tr>
                 @empty
                     <tr>
-                        <td colspan="{{ $isAdmin ? 9 : 8 }}" class="px-4 py-6 text-center text-sm text-gray-500">Sin solicitudes aún.</td>
+                        <td colspan="{{ $isAdmin ? 10 : 9 }}" class="px-4 py-6 text-center text-sm text-gray-500">Sin solicitudes aún.</td>
                     </tr>
                 @endforelse
                 </tbody>

@@ -16,13 +16,15 @@ package "Dominio" {
     - id : int
     - name : string
     - email : string
+    - phone : string
     - password : string
     - role : string
     + isAdmin() : bool
-    + isRecolector() : bool
+    + isEmpresaRecolectora() : bool
     + isUser() : bool
     + solicitudes() : List<Solicitud>
     + recolecciones() : List<Recoleccion>
+    + empresaRecolectora() : EmpresaRecolectora
   }
 
   class Solicitud {
@@ -32,6 +34,9 @@ package "Dominio" {
     - fecha_programada : date
     - frecuencia : string
     - recolecciones_por_semana : tinyint
+    - turno_ruta : smallint
+    - recordatorio_prev_enviado_at : datetime
+    - recordatorio_dia_enviado_at : datetime
     - estado : string
     + user() : User
     + recolecciones() : List<Recoleccion>
@@ -43,9 +48,16 @@ package "Dominio" {
     - user_id : int
     - fecha_real : datetime
     - kilos : float
+    - cumple_separacion : bool
     - puntos : int
     + solicitud() : Solicitud
     + recolector() : User
+  }
+
+  class Setting {
+    - id : int
+    - key : string
+    - value : text
   }
 }
 
@@ -63,15 +75,37 @@ package "HTTP Controllers" {
     + index()
     + store()
     + update()
+    + export()
   }
 
   class AdminController {
     + dashboard()
     + users()
     + manageUsers()
+    + storeUser()
     + searchUser()
     + updateUser()
     + deleteUser()
+  }
+}
+
+package "Console" {
+  class SendSolicitudReminders {
+    + handle()
+    + processWindow()
+    + buildMessage()
+  }
+}
+
+package Services {
+  class WhatsAppService {
+    + send(to, message)
+  }
+
+  class PointsCalculator {
+    + calculate(kilos)
+    + updateFormula(formula)
+    + getFormula()
   }
 }
 
@@ -94,16 +128,30 @@ AdminController ..> Solicitud : métricas
 AdminController ..> Recoleccion : métricas
 AdminMiddleware ..> AdminController : protege
 AdminMiddleware ..> User : verifica rol
+AdminController ..> User : crea cuentas
+PointsCalculator ..> Setting : persiste fórmula
+RecoleccionController ..> PointsCalculator : calcula puntos
+SendSolicitudReminders ..> Solicitud : consulta recordatorios
+SendSolicitudReminders ..> WhatsAppService : envía notificaciones
+WhatsAppService ..> User : requiere phone
 
 note right of Solicitud
   estado ∈ {pendiente, en_proceso,
             completada, cancelada}
   frecuencia ∈ {programada, demanda}
   recolecciones_por_semana ∈ {1, 2}
+  turno_ruta ∈ [1, 500]
 end note
 
 note right of User
-  role ∈ {user, admin, recolector}
+  role ∈ {user, admin, empresa}
+  phone formato E.164 (opcional)
+end note
+
+note right of Recoleccion
+  kilos registrado por la empresa recolectora al retirar
+  material reciclable
+  cumple_separacion controla si se asignan puntos
 end note
 
 @enduml

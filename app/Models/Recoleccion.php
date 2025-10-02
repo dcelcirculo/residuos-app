@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 
 /**
  * Modelo: Recoleccion
@@ -11,27 +12,40 @@ use Illuminate\Database\Eloquent\Model;
  *
  * Atributos principales:
  * - solicitud_id : referencia a la solicitud atendida
- * - user_id      : recolector (usuario) que ejecutó la recolección
+ * - user_id      : empresa recolectora (usuario) que ejecutó la recolección
  * - fecha_real   : timestamp/fecha en que ocurrió la recolección
  * - kilos        : cantidad recolectada (kg)
  * - puntos       : puntaje calculado (ej. kilos * 10)
  *
  * Relaciones:
  * - solicitud()  : belongsTo Solicitud
- * - recolector() : belongsTo User (rol: recolector)
+ * - recolector() : belongsTo User (rol empresa recolectora)
  *
  * Notas:
  * - $fillable habilita asignación masiva en create()/update().
  * - $table fija el nombre correcto en plural "recolecciones".
  */
 class Recoleccion extends Model
-{   
+{
+    use HasFactory;
+
     /**
      * Campos permitidos para asignación masiva.
      * Mantener este arreglo alineado con las reglas de validación del controlador.
      * @var array<int, string>
      */
-    protected $fillable = ['solicitud_id','user_id','fecha_real','kilos','puntos'];
+    protected $fillable = ['solicitud_id','user_id','fecha_real','kilos','puntos','cumple_separacion'];
+
+    /**
+     * Conversión de atributos a tipos nativos.
+     *
+     * @var array<string, string>
+     */
+    protected $casts = [
+        'fecha_real' => 'datetime',
+        'kilos' => 'decimal:2',
+        'cumple_separacion' => 'boolean',
+    ];
 
     /**
      * Relación: esta recolección pertenece a una Solicitud.
@@ -43,9 +57,9 @@ class Recoleccion extends Model
     }
 
     /**
-     * Relación: esta recolección pertenece a un Usuario (recolector).
+     * Relación: esta recolección pertenece a una empresa recolectora (usuario).
      * Campo foráneo específico: user_id.
-     * Permite: $recoleccion->recolector
+     * Permite: $recoleccion->recolector (empresa)
      * @return \Illuminate\Database\Eloquent\Relations\BelongsTo
      */
     public function recolector(){

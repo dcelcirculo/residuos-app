@@ -47,7 +47,21 @@ class Solicitud extends Model
         'fecha_programada',  // Fecha programada para la recolección (YYYY-MM-DD)
         'frecuencia',        // programada | demanda
         'recolecciones_por_semana', // Número de recolecciones semanales (1 o 2)
+        'turno_ruta',        // Posición dentro de la ruta de recolección
         'estado',            // Estado del ciclo de la solicitud
+    ];
+
+    /**
+     * Conversión de atributos a tipos nativos.
+     *
+     * @var array<string, string>
+     */
+    protected $casts = [
+        'fecha_programada' => 'date',
+        'recordatorio_prev_enviado_at' => 'datetime',
+        'recordatorio_dia_enviado_at' => 'datetime',
+        'turno_ruta' => 'integer',
+        'recolecciones_por_semana' => 'integer',
     ];
 
     /**

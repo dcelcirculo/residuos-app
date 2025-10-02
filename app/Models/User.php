@@ -16,16 +16,17 @@ use Illuminate\Notifications\Notifiable;
  * - name     : nombre del usuario
  * - email    : correo electrónico
  * - password : contraseña (encriptada)
- * - role     : rol dentro del sistema (user | admin | recolector)
+ * - role     : rol dentro del sistema (user | admin | empresa)
  *
  * Relaciones:
  * - solicitudes()   : hasMany Solicitud (usuarios que crean solicitudes)
- * - recolecciones() : hasMany Recoleccion (usuarios con rol recolector)
+ * - recolecciones() : hasMany Recoleccion (empresas recolectoras)
+ * - empresaRecolectora() : hasOne EmpresaRecolectora (perfil de la empresa)
  *
  * Métodos útiles:
  * - isAdmin()     : true si el usuario es administrador
  * - isUser()      : true si es usuario normal
- * - isRecolector(): true si es recolector
+ * - isEmpresaRecolectora(): true si es empresa recolectora
  */
 class User extends Authenticatable
 {
@@ -40,6 +41,7 @@ class User extends Authenticatable
     protected $fillable = [
         'name',
         'email',
+        'phone',
         'password',
         'role',
     ];
@@ -76,11 +78,16 @@ class User extends Authenticatable
     }
 
     /**
-     * Relación: un usuario (recolector) puede tener varias recolecciones.
+     * Relación: una empresa recolectora puede tener varias recolecciones.
      */
     public function recolecciones()
     {
         return $this->hasMany(\App\Models\Recoleccion::class);
+    }
+
+    public function empresaRecolectora()
+    {
+        return $this->hasOne(EmpresaRecolectora::class);
     }
 
     /**
@@ -100,10 +107,10 @@ class User extends Authenticatable
     }
 
     /**
-     * Verifica si el usuario es recolector.
+     * Verifica si el usuario es empresa recolectora.
      */
-    public function isRecolector(): bool
+    public function isEmpresaRecolectora(): bool
     {
-        return $this->role === 'recolector';
+        return $this->role === 'empresa';
     }
 }

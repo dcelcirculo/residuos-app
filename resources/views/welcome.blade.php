@@ -41,10 +41,16 @@
            class="block w-full text-center bg-gray-800 text-white py-2 rounded hover:bg-gray-900">
             🛠️ Administrador
         </a>
-        <a href="{{ route('login') }}?role=recolector"
+        <a href="{{ route('login') }}?role=empresa"
            class="block w-full text-center bg-green-600 text-white py-2 rounded hover:bg-green-700">
-            🚛 Recolector
+            🚛 Empresa recolectora
         </a>
+    </div>
+
+    {{-- Registro para usuarios nuevos --}}
+    <div class="mt-8 text-center text-sm text-gray-600">
+        ¿Eres nuevo en EcoGestión?
+        <a href="{{ route('register') }}" class="text-indigo-600 hover:text-indigo-800 font-semibold">Crear cuenta</a>
     </div>
 </body>
 </html>

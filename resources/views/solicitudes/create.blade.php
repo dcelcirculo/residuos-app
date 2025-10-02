@@ -94,6 +94,18 @@
                             @enderror
                         </div>
 
+                        {{-- Campo: Turno dentro de la ruta --}}
+                        <div class="mb-6">
+                            <label class="block text-sm font-medium text-gray-700">
+                                Turno en la ruta
+                            </label>
+                            <input type="number" name="turno_ruta" min="1" max="500" value="{{ old('turno_ruta', 1) }}" class="mt-1 block w-full border-gray-300 rounded" required>
+                            <p class="text-xs text-gray-500 mt-1">Usa el número asignado en la ruta planificada.</p>
+                            @error('turno_ruta')
+                                <p class="text-red-600 text-sm mt-1">{{ $message }}</p>
+                            @enderror
+                        </div>
+
                         {{-- Acciones del formulario --}}
                         <div class="flex items-center gap-3">
                             {{-- Cancelar: vuelve al índice/listado de solicitudes sin crear nada --}}

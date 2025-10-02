@@ -5,7 +5,11 @@ namespace App\Http\Controllers;
 use App\Models\User;
 use App\Models\Solicitud;
 use App\Models\Recoleccion;
+use App\Services\PointsCalculator;
 use Illuminate\Http\Request; // ← Import necesario para los type-hints de Request
+use Illuminate\Support\Arr;
+use Illuminate\Support\Facades\Hash;
+use InvalidArgumentException;
 
 /**
  * Controlador: AdminController
@@ -15,7 +19,8 @@ use Illuminate\Http\Request; // ← Import necesario para los type-hints de Requ
  * Funcionalidades actuales:
  *  - dashboard(): Muestra métricas globales (usuarios, solicitudes, recolecciones).
  *  - users():     Lista paginada de usuarios (vista informativa por ahora).
- *  - manageUsers(): Pantalla para gestionar usuarios (buscar/editar/eliminar).
+ *  - manageUsers(): Pantalla para gestionar usuarios (crear/buscar/editar/eliminar).
+ *  - storeUser():  Alta rápida de usuarios con cualquier rol.
  *  - searchUser():  Busca un usuario por ID o por nombre (username parcial).
  *  - updateUser():  Actualiza nombre/email/rol de un usuario.
  *  - deleteUser():  Elimina un usuario existente.
@@ -30,6 +35,8 @@ use Illuminate\Http\Request; // ← Import necesario para los type-hints de Requ
  */
 class AdminController extends Controller
 {
+    private const RESIDUE_TYPES = ['organico', 'inorganico', 'peligroso'];
+
     /**
      * Panel de administración con métricas globales.
      *
@@ -68,10 +75,38 @@ class AdminController extends Controller
      *
      * @return \Illuminate\Contracts\View\View
      */
-    public function manageUsers()
+    public function manageUsers(PointsCalculator $pointsCalculator)
     {
+        $formula = $pointsCalculator->getFormula();
+        $tiposResiduos = self::RESIDUE_TYPES;
+
         // Solo retorna la vista; la variable $user se inyectará cuando exista resultado de búsqueda.
-        return view('admin.manage-users');
+        return view('admin.manage-users', compact('formula', 'tiposResiduos'));
+    }
+
+    /**
+     * Crear un nuevo usuario con cualquier rol permitido.
+     */
+    public function storeUser(Request $request)
+    {
+        $data = $request->validateWithBag('createUser', [
+            'name' => ['required', 'string', 'max:255'],
+            'email' => ['required', 'email', 'max:255', 'unique:users,email'],
+            'phone' => ['nullable', 'string', 'regex:/^\+?[1-9]\d{7,14}$/'],
+            'role' => ['required', 'in:user,admin,empresa'],
+            'password' => ['required', 'string', 'min:8', 'confirmed'],
+            'especialidades' => ['required_if:role,empresa', 'array', 'min:1'],
+            'especialidades.*' => ['in:'.implode(',', self::RESIDUE_TYPES)],
+        ]);
+
+        $payload = Arr::only($data, ['name', 'email', 'phone', 'role']);
+        $payload['password'] = Hash::make($data['password']);
+
+        $user = User::create($payload);
+
+        $this->syncEmpresaRecolectora($user, $data['especialidades'] ?? []);
+
+        return back()->with('ok', 'Usuario creado: '.$user->name.' ('.$user->role.')');
     }
 
     /**
@@ -82,19 +117,42 @@ class AdminController extends Controller
      * @param  \Illuminate\Http\Request  $request
      * @return \Illuminate\Contracts\View\View
      */
-    public function searchUser(Request $request)
+    public function searchUser(Request $request, PointsCalculator $pointsCalculator)
     {
         // Extrae criterios de búsqueda del formulario (pueden venir vacíos).
         $id       = $request->input('id');
         $username = $request->input('username');
+        $email    = $request->input('email');
 
         // Construye la consulta: match por ID o por nombre parcial (LIKE).
-        $user = User::when($id,       fn($q) => $q->orWhere('id', $id))
-                    ->when($username, fn($q) => $q->orWhere('name', 'like', "%{$username}%"))
-                    ->first();
+        $user = User::with('empresaRecolectora')
+            ->when($id, fn($q) => $q->orWhere('id', $id))
+            ->when($username, fn($q) => $q->orWhere('name', 'like', "%{$username}%"))
+            ->when($email, fn($q) => $q->orWhere('email', 'like', "%{$email}%"))
+            ->first();
 
         // Renderiza la misma vista de gestión, ahora con $user (o null si no hubo match).
-        return view('admin.manage-users', compact('user'));
+        $formula = $pointsCalculator->getFormula();
+        $tiposResiduos = self::RESIDUE_TYPES;
+
+        return view('admin.manage-users', compact('user', 'formula', 'tiposResiduos'));
+    }
+
+    public function updatePointsFormula(Request $request, PointsCalculator $pointsCalculator)
+    {
+        $validated = $request->validate([
+            'formula' => ['required', 'string'],
+        ]);
+
+        try {
+            $pointsCalculator->updateFormula($validated['formula']);
+        } catch (InvalidArgumentException $e) {
+            return back()->withErrors([
+                'formula' => $e->getMessage(),
+            ])->withInput();
+        }
+
+        return back()->with('ok', 'Fórmula actualizada.');
     }
 
     /**
@@ -118,8 +176,11 @@ class AdminController extends Controller
         $validated = $request->validate([
             'name'  => ['required', 'string', 'max:255'],
             'email' => ['required', 'email'],
-            'role'  => ['required', 'in:user,admin,recolector'],
+            'role'  => ['required', 'in:user,admin,empresa'],
+            'phone' => ['nullable', 'string', 'regex:/^\+?[1-9]\d{7,14}$/'],
             'password' => ['nullable', 'string', 'min:8', 'confirmed'],
+            'especialidades' => ['required_if:role,empresa', 'array', 'min:1'],
+            'especialidades.*' => ['in:'.implode(',', self::RESIDUE_TYPES)],
         ]);
 
         // Si no se envía una nueva contraseña, mantener la actual
@@ -127,11 +188,33 @@ class AdminController extends Controller
             unset($validated['password']);
         }
 
+        $especialidades = $validated['especialidades'] ?? [];
+        unset($validated['especialidades']);
+
         // Actualiza los campos permitidos.
         $user->update($validated);
 
+        $this->syncEmpresaRecolectora($user, $especialidades);
+
         // Vuelve a la pantalla anterior con un mensaje de éxito.
         return back()->with('ok','Usuario actualizado correctamente');
+    }
+
+    private function syncEmpresaRecolectora(User $user, array $especialidades): void
+    {
+        if ($user->isEmpresaRecolectora()) {
+            $especialidades = array_values(array_unique(array_filter($especialidades)));
+
+            $user->empresaRecolectora()->updateOrCreate(
+                [],
+                [
+                    'nombre' => $user->name,
+                    'especialidades' => $especialidades,
+                ]
+            );
+        } else {
+            $user->empresaRecolectora()->delete();
+        }
     }
 
     /**
