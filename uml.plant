@@ -1,157 +1,170 @@
 @startuml
-skinparam backgroundColor #FFFFFF
+title Sistema de Gestión de Residuos - Aplicación de Patrones GRASP
+skinparam style strictuml
 skinparam classAttributeIconSize 0
-skinparam class {
-  BackgroundColor #F7FAFC
-  BorderColor #2F855A
-  ArrowColor #2B6CB0
-  FontColor #1A202C
+
+' ==========================
+'        CLASES
+' ==========================
+
+class Usuario {
+  -id: int
+  -nombre: String
+  -email: String
+  -password: String
+  -telefono: String
+  -direccion: String
+  -puntos: int
+  +registrar()
+  +login()
+  +solicitarRecoleccion()
+  +consultarReporte()
+  +canjearPuntos()
 }
 
-hide stereotype circle
-hide methods
-
-package "Dominio" {
-  class User {
-    - id : int
-    - name : string
-    - email : string
-    - phone : string
-    - password : string
-    - role : string
-    + isAdmin() : bool
-    + isEmpresaRecolectora() : bool
-    + isUser() : bool
-    + solicitudes() : List<Solicitud>
-    + recolecciones() : List<Recoleccion>
-    + empresaRecolectora() : EmpresaRecolectora
-  }
-
-  class Solicitud {
-    - id : int
-    - user_id : int
-    - tipo_residuo : string
-    - fecha_programada : date
-    - frecuencia : string
-    - recolecciones_por_semana : tinyint
-    - turno_ruta : smallint
-    - recordatorio_prev_enviado_at : datetime
-    - recordatorio_dia_enviado_at : datetime
-    - estado : string
-    + user() : User
-    + recolecciones() : List<Recoleccion>
-  }
-
-  class Recoleccion {
-    - id : int
-    - solicitud_id : int
-    - user_id : int
-    - fecha_real : datetime
-    - kilos : float
-    - cumple_separacion : bool
-    - puntos : int
-    + solicitud() : Solicitud
-    + recolector() : User
-  }
-
-  class Setting {
-    - id : int
-    - key : string
-    - value : text
-  }
+class Solicitud {
+  -id: int
+  -fecha_programada: Date
+  -tipo_residuo: String
+  -frecuencia: String
+  -estado: String
+  +crear()
+  +actualizar()
+  +eliminar()
+  +asignarRecolector()
 }
 
-package "HTTP Controllers" {
-  class SolicitudController {
-    + index()
-    + create()
-    + store()
-    + export()
-    + update()
-    + destroy()
-  }
-
-  class RecoleccionController {
-    + index()
-    + store()
-    + update()
-    + export()
-  }
-
-  class AdminController {
-    + dashboard()
-    + users()
-    + manageUsers()
-    + storeUser()
-    + searchUser()
-    + updateUser()
-    + deleteUser()
-  }
+class Recoleccion {
+  -id: int
+  -fecha: Date
+  -hora: Time
+  -estado: String
+  -tipoResiduo: String
+  -peso: float
+  +programar()
+  +confirmar()
+  +cancelar()
 }
 
-package "Console" {
-  class SendSolicitudReminders {
-    + handle()
-    + processWindow()
-    + buildMessage()
-  }
+class Notificacion {
+  -id: int
+  -tipo: String
+  -mensaje: String
+  -fechaEnvio: String
+  +enviarWhatsApp()
+  +enviarEmail()
 }
 
-package Services {
-  class WhatsAppService {
-    + send(to, message)
-  }
-
-  class PointsCalculator {
-    + calculate(kilos)
-    + updateFormula(formula)
-    + getFormula()
-  }
+class Punto {
+  -id: int
+  -puntosOtorgados: int
+  -fecha: Date
+  +calcularPuntos()
+  +canjear()
 }
 
-package Middleware {
-  class AdminMiddleware {
-    + handle(request, next)
-  }
+class Recolector {
+  -id: int
+  -nombre: String
+  -empresaId: int
+  +registrarPeso()
+  +confirmarRecoleccion()
 }
 
-User "1" -- "*" Solicitud : crea
-Solicitud "1" -- "*" Recoleccion : genera
-User "1" -- "*" Recoleccion : recolecta
+class Empresa {
+  -id: int
+  -nombre: String
+  -especialidad: String
+  +asignarRecolector()
+  +generarReporte()
+}
 
-SolicitudController --> Solicitud : gestiona
-SolicitudController ..> User : auth()
-RecoleccionController --> Recoleccion : gestiona
-RecoleccionController ..> Solicitud : actualiza estado
-AdminController --> User : administra
-AdminController ..> Solicitud : métricas
-AdminController ..> Recoleccion : métricas
-AdminMiddleware ..> AdminController : protege
-AdminMiddleware ..> User : verifica rol
-AdminController ..> User : crea cuentas
-PointsCalculator ..> Setting : persiste fórmula
-RecoleccionController ..> PointsCalculator : calcula puntos
-SendSolicitudReminders ..> Solicitud : consulta recordatorios
-SendSolicitudReminders ..> WhatsAppService : envía notificaciones
-WhatsAppService ..> User : requiere phone
+class Administrador {
+  -id: int
+  -nombre: String
+  -email: String
+  +gestionarUsuarios()
+  +modificarFormulaPuntos()
+  +generarReportes()
+}
 
-note right of Solicitud
-  estado ∈ {pendiente, en_proceso,
-            completada, cancelada}
-  frecuencia ∈ {programada, demanda}
-  recolecciones_por_semana ∈ {1, 2}
-  turno_ruta ∈ [1, 500]
+class Reporte {
+  -id: int
+  -tipo: String
+  -fechaInicio: Date
+  -fechaFin: Date
+  -datos: JSON
+  +generarReporteUsuario()
+  +generarReporteEmpresa()
+  +generarReporteGeneral()
+}
+
+' ==========================
+'     CONTROLADORES (Controller)
+' ==========================
+class UsuarioController {
+  +registrarUsuario()
+  +iniciarSesion()
+  +verSolicitudes()
+}
+
+class SolicitudController {
+  +crearSolicitud()
+  +editarSolicitud()
+  +eliminarSolicitud()
+}
+
+class RecoleccionController {
+  +programarRecoleccion()
+  +confirmarRecoleccion()
+}
+
+class AdminController {
+  +gestionarUsuarios()
+  +verReportes()
+}
+
+' ==========================
+'        RELACIONES
+' ==========================
+Usuario "1" --> "*" Solicitud : realiza >
+Solicitud "1" --> "1" Recoleccion : genera >
+Usuario "1" --> "*" Notificacion : recibe >
+Usuario "1" --> "*" Punto : acumula >
+Empresa "1" --> "*" Recolector : asigna >
+Administrador "1" --> "*" Reporte : genera >
+
+' ==========================
+'        PATRONES GRASP
+' ==========================
+note right of SolicitudController
+  << Controller >>
+  Gestiona la creación, edición y
+  eliminación de solicitudes.
 end note
 
-note right of User
-  role ∈ {user, admin, empresa}
-  phone formato E.164 (opcional)
+note right of Solicitud
+  << Information Expert >>
+  Posee la información necesaria
+  para gestionar sus propios datos.
+end note
+
+note right of Usuario
+  << Creator >>
+  Crea instancias de Solicitud
+  cuando un usuario solicita una recolección.
 end note
 
 note right of Recoleccion
-  kilos registrado por la empresa recolectora al retirar
-  material reciclable
-  cumple_separacion controla si se asignan puntos
+  << Low Coupling / High Cohesion >>
+  Contiene funciones específicas para
+  programación y confirmación sin depender de otras clases.
+end note
+
+note right of AdminController
+  << Controller / Polymorphism >>
+  Administra usuarios y reportes,
+  con comportamiento distinto según el rol.
 end note
 
 @enduml

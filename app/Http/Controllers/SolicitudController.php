@@ -1,229 +1,178 @@
-<?php
+@startuml
+title Sistema de Gestión de Residuos - Aplicación de Patrones GRASP (EcoGestión)
+skinparam style strictuml
+skinparam classAttributeIconSize 0
+skinparam noteBackgroundColor #EAF4EA
+skinparam noteBorderColor #88C057
 
-namespace App\Http\Controllers;
+' ==========================
+' CLASES PRINCIPALES
+' ==========================
 
-use App\Models\Solicitud;
-use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Storage;
-
-class SolicitudController extends Controller
-{
-    /**
-     * Mostrar listado de solicitudes del usuario autenticado.
-     * Incluye filtros, búsqueda y ordenamiento.
-     */
-    public function index(Request $request)
-    {
-        // Construir query dinámica usando filtros y orden
-        [$query, $sort, $dir] = $this->buildQuery($request);
-
-        // Paginar resultados y mantener filtros en la URL
-        $solicitudes = $query
-            ->paginate(10)
-            ->appends($request->query());
-
-        return view('solicitudes.index', compact('solicitudes', 'sort', 'dir'));
-    }
-
-    /**
-     * Exportar listado de solicitudes a un archivo CSV.
-     */
-    public function export(Request $request)
-    {
-        [$query] = $this->buildQuery($request);
-
-        // Crear CSV en memoria (UTF-8 con BOM para compatibilidad con Excel)
-        $tmp = fopen('php://temp', 'w+');
-        fwrite($tmp, "\xEF\xBB\xBF"); // BOM
-
-        // Encabezados del archivo
-        fputcsv($tmp, ['ID','Tipo residuo','Frecuencia','Veces semana','Turno ruta','Estado','Fecha programada','Creado'], ';');
-
-        // Filas con los datos de cada solicitud
-        foreach ($query->orderBy('id')->cursor() as $s) {
-            fputcsv($tmp, [
-                $s->id,
-                (string) $s->tipo_residuo,
-                (string) $s->frecuencia,
-                (int) $s->recolecciones_por_semana,
-                (string) ($s->turno_ruta ?? ''),
-                (string) ($s->estado ?? ''),
-                (string) $s->fecha_programada,
-                optional($s->created_at)->toDateTimeString(),
-            ], ';');
-        }
-
-        // Obtener el contenido del CSV
-        rewind($tmp);
-        $csv = stream_get_contents($tmp);
-        fclose($tmp);
-
-        $fileName = 'solicitudes_'.now()->format('Ymd_His').'.csv';
-
-        // Retornar respuesta para descarga
-        return response($csv, 200, [
-            'Content-Type'        => 'text/csv; charset=UTF-8',
-            'Content-Disposition' => 'attachment; filename="'.$fileName.'"',
-            'Content-Length'      => (string) strlen($csv),
-            'Cache-Control'       => 'no-store, no-cache, must-revalidate',
-            'Pragma'              => 'no-cache',
-            'Expires'             => '0',
-        ]);
-    }
-
-    /**
-     * Método privado para construir el query de solicitudes con filtros y ordenamiento.
-     * Devuelve [Builder $query, string $sort, string $dir].
-     */
-    private function buildQuery(Request $request): array
-    {
-        $user = $request->user();
-
-        // Admins necesitan visibilidad global de solicitudes
-        if ($user->isAdmin()) {
-            $query = Solicitud::query()->with('user');
-
-            // Filtrar por usuario específico (ID directo)
-            if ($request->filled('user_id')) {
-                $userId = (int) $request->input('user_id');
-                if ($userId > 0) {
-                    $query->where('user_id', $userId);
-                }
-            }
-
-            // Búsqueda por nombre o email del solicitante
-            if ($request->filled('user')) {
-                $needle = $request->string('user')->trim();
-                $query->whereHas('user', function ($sub) use ($needle) {
-                    $sub->where('name', 'like', "%{$needle}%")
-                        ->orWhere('email', 'like', "%{$needle}%");
-                });
-            }
-        } else {
-            // Usuarios normales sólo ven sus propias solicitudes
-            $query = $user->solicitudes();
-        }
-
-        // 🔍 Búsqueda libre en id, tipo_residuo, frecuencia o estado
-        if ($request->filled('q')) {
-            $q = $request->string('q');
-            $query->where(function ($qq) use ($q) {
-                $qq->where('id', $q)
-                   ->orWhere('tipo_residuo', 'like', "%{$q}%")
-                   ->orWhere('frecuencia', 'like', "%{$q}%")
-                   ->orWhere('estado', 'like', "%{$q}%");
-            });
-        }
-
-        // Filtro por estado (si no es "todos")
-        if ($request->filled('estado') && $request->estado !== 'todos') {
-            $query->where('estado', $request->estado);
-        }
-
-        // Filtros por fechas
-        if ($request->filled('from')) {
-            $query->whereDate('created_at', '>=', $request->date('from'));
-        }
-        if ($request->filled('to')) {
-            $query->whereDate('created_at', '<=', $request->date('to'));
-        }
-
-        // Ordenar resultados (default: created_at desc)
-        $sort = in_array($request->get('sort'), ['id','created_at','fecha_programada','estado','recolecciones_por_semana','turno_ruta'])
-            ? $request->get('sort')
-            : 'created_at';
-        $dir  = in_array($request->get('dir'),  ['asc','desc'])
-            ? $request->get('dir')
-            : 'desc';
-
-        $query->orderBy($sort, $dir);
-
-        return [$query, $sort, $dir];
-    }
-
-    /**
-     * Mostrar formulario para crear una nueva solicitud.
-     */
-    public function create()
-    {
-        return view('solicitudes.create');
-    }
-
-    /**
-     * Guardar una nueva solicitud en la base de datos.
-     */
-    public function store(Request $request)
-    {
-        // Validación de datos del formulario
-        $data = $request->validate([
-            'tipo_residuo'     => 'required|in:organico,inorganico,peligroso',
-            'fecha_programada' => 'required|date',
-            'frecuencia'       => 'required|in:programada,demanda',
-            'recolecciones_por_semana' => 'required|integer|in:1,2',
-            'turno_ruta'       => 'required|integer|min:1|max:500',
-        ]);
-
-        // Asociar solicitud al usuario autenticado  y estado inicial
-        $data['user_id'] = auth()->id();
-        $data['estado']  = 'pendiente'; // ← estado por defecto
-
-        // Crear registro en DB
-        Solicitud::create($data);
-
-        return redirect()
-            ->route('solicitudes.index')
-            ->with('ok', 'Solicitud creada');
-    }
-
-    /**
-     * Mostrar una solicitud específica.
-     * (Por implementar si es necesario).
-     */
-    public function show(Solicitud $solicitud)
-    {
-        //
-    }
-
-    /**
-     * Mostrar formulario de edición de una solicitud.
-     */
-    public function edit(Solicitud $solicitud)
-    {
-        // Seguridad: sólo el dueño puede editar su solicitud
-    abort_unless($solicitud->user_id === auth()->id(), 403);
-    return view('solicitudes.edit', compact('solicitud'));
-    }
-
-    /**
-     * Actualizar una solicitud existente.
-     */
-    public function update(Request $request, Solicitud $solicitud)
-{
-    // Seguridad: sólo el dueño puede actualizar su solicitud
-    abort_unless($solicitud->user_id === auth()->id(), 403);
-
-    $data = $request->validate([
-        'tipo_residuo'     => 'required|in:organico,inorganico,peligroso',
-        'fecha_programada' => 'required|date|after_or_equal:today',
-        'frecuencia'       => 'required|in:programada,demanda',
-        'recolecciones_por_semana' => 'required|integer|in:1,2',
-        'turno_ruta'       => 'required|integer|min:1|max:500',
-        'estado'           => 'nullable|in:pendiente,recogida,cancelada',
-    ]);
-
-    $solicitud->update($data);
-    return redirect()->route('solicitudes.index')->with('ok','Solicitud actualizada');
+class Usuario {
+  -id: int
+  -nombre: String
+  -email: String
+  -password: String
+  -telefono: String
+  -direccion: String
+  -puntos: int
+  +registrar()
+  +login()
+  +solicitarRecoleccion()
+  +consultarReporte()
+  +canjearPuntos()
 }
 
-    /**
-     * Eliminar una solicitud.
-     */
-    public function destroy(Solicitud $solicitud)
-{
-    // Seguridad: sólo el dueño puede eliminar su solicitud
-    abort_unless($solicitud->user_id === auth()->id(), 403);
+class Solicitud {
+  -id: int
+  -fecha_programada: Date
+  -tipo_residuo: String
+  -frecuencia: String
+  -estado: String
+  +crear()
+  +actualizar()
+  +eliminar()
+  +asignarRecolector()
+}
 
-    $solicitud->delete();
-    return back()->with('ok','Solicitud eliminada');
+class Recoleccion {
+  -id: int
+  -fecha: Date
+  -hora: Time
+  -estado: String
+  -tipoResiduo: String
+  -peso: float
+  +programar()
+  +confirmar()
+  +cancelar()
 }
+
+class Notificacion {
+  -id: int
+  -tipo: String
+  -mensaje: String
+  -fechaEnvio: String
+  +enviarWhatsApp()
+  +enviarEmail()
 }
+
+class Punto {
+  -id: int
+  -puntosOtorgados: int
+  -fecha: Date
+  +calcularPuntos()
+  +canjear()
+}
+
+class Recolector {
+  -id: int
+  -nombre: String
+  -empresaId: int
+  +registrarPeso()
+  +confirmarRecoleccion()
+}
+
+class Empresa {
+  -id: int
+  -nombre: String
+  -especialidad: String
+  +asignarRecolector()
+  +generarReporte()
+}
+
+class Administrador {
+  -id: int
+  -nombre: String
+  -email: String
+  +gestionarUsuarios()
+  +modificarFormulaPuntos()
+  +generarReportes()
+}
+
+class Reporte {
+  -id: int
+  -tipo: String
+  -fechaInicio: Date
+  -fechaFin: Date
+  -datos: JSON
+  +generarReporteUsuario()
+  +generarReporteEmpresa()
+  +generarReporteGeneral()
+}
+
+' ==========================
+' CONTROLADORES
+' ==========================
+class UsuarioController {
+  +registrarUsuario()
+  +iniciarSesion()
+  +verSolicitudes()
+}
+
+class SolicitudController {
+  +crearSolicitud()
+  +editarSolicitud()
+  +eliminarSolicitud()
+}
+
+class RecoleccionController {
+  +programarRecoleccion()
+  +confirmarRecoleccion()
+}
+
+class AdminController {
+  +gestionarUsuarios()
+  +verReportes()
+}
+
+
+' ==========================
+' RELACIONES ENTRE CLASES
+' ==========================
+
+Usuario "1" --> "*" Solicitud : realiza >
+Solicitud "1" --> "1" Recoleccion : genera >
+Usuario "1" --> "*" Notificacion : recibe >
+Usuario "1" --> "*" Punto : acumula >
+Empresa "1" --> "*" Recolector : asigna >
+Administrador "1" --> "*" Reporte : genera >
+Recolector "1" --> "*" Recoleccion : ejecuta >
+Empresa "1" --> "*" Solicitud : pertenece a >
+
+' ==========================
+' PATRONES GRASP (ETIQUETAS Y JUSTIFICACIÓN)
+' ==========================
+
+note right of SolicitudController
+  << Controller >>
+  Gestiona la creación, edición y eliminación
+  de solicitudes. Actúa como mediador entre
+  la vista y los modelos.
+end note
+
+note right of Usuario
+  << Creator >>
+  Crea instancias de Solicitud cuando
+  un usuario solicita una recolección.
+end note
+
+note right of Solicitud
+  << Information Expert >>
+  Posee la información necesaria para
+  gestionar sus propios datos.
+end note
+
+note right of Recoleccion
+  << Low Coupling / High Cohesion >>
+  Maneja tareas específicas sin depender
+  de otras clases. Se mantiene modular.
+end note
+
+note right of AdminController
+  << Controller / Polymorphism >>
+  Gestiona usuarios y reportes con 
+  comportamientos distintos según el rol.
+end note
+
+@enduml
